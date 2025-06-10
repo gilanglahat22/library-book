@@ -4,20 +4,23 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
+# Install dependencies
+RUN apk add --no-cache libc6-compat
+
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
-
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"] 
+# Set hostname for container networking
+ENV HOSTNAME "0.0.0.0"
+
+# Start the development server
+CMD ["npm", "run", "dev"]
