@@ -10,7 +10,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "borrowed_books")
+@Table(name = "borrowed_books", indexes = {
+    @Index(name = "idx_borrowed_book_member", columnList = "member_id"),
+    @Index(name = "idx_borrowed_book_book", columnList = "book_id"),
+    @Index(name = "idx_borrowed_book_status", columnList = "status"),
+    @Index(name = "idx_borrowed_book_dates", columnList = "borrow_date, due_date")
+})
 @EntityListeners(AuditingEntityListener.class)
 public class BorrowedBook {
     

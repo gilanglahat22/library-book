@@ -24,7 +24,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     
     Page<Book> findByAuthorId(Long authorId, Pageable pageable);
     
-    @Query("SELECT b FROM Book b WHERE " +
+    @Query("SELECT DISTINCT b FROM Book b LEFT JOIN FETCH b.author WHERE " +
            "LOWER(b.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(b.category) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(b.author.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +

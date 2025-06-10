@@ -1,45 +1,43 @@
-# Use OpenJDK 17 and install Maven manually
-FROM openjdk:17-jdk-slim AS build
-
-# Install Maven
-RUN apt-get update && \
-    apt-get install -y wget && \
-    wget https://archive.apache.org/dist/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz && \
-    tar -xzf apache-maven-3.9.5-bin.tar.gz -C /opt && \
-    ln -s /opt/apache-maven-3.9.5 /opt/maven && \
-    rm apache-maven-3.9.5-bin.tar.gz && \
-    apt-get clean
-
-# Set Maven environment
-ENV MAVEN_HOME /opt/maven
-ENV PATH $MAVEN_HOME/bin:$PATH
-
-# Set working directory
+# Build stage
+FROM maven:3.9.5-eclipse-temurin-17-focal AS build
 WORKDIR /app
 
-# Copy pom.xml first for better caching
+# Copy pom.xml and source code
 COPY pom.xml .
+COPY src ./src
 
-# Download dependencies (for better caching)
-RUN mvn dependency:go-offline -B
+# Show directory structure before build
+RUN echo "Directory structure before build:" && \
+    ls -la && \
+    echo "Source directory contents:" && \
+    ls -la src/main/java/com/library
 
-# Copy source code
-COPY src src
+# Build the application with debug output
+RUN mvn clean package -DskipTests -X
 
-# Build application
-RUN mvn clean package -DskipTests
+# Show build results
+RUN echo "Build results:" && \
+    ls -la target/ && \
+    echo "JAR file details:" && \
+    find /app -name "*.jar" -type f -ls && \
+    echo "JAR file contents:" && \
+    jar tvf target/library-management-0.0.1-SNAPSHOT.jar
 
-# Use OpenJDK 17 for runtime
-FROM openjdk:17-jdk-slim
-
-# Set working directory
+# Runtime stage
+FROM eclipse-temurin:17-jre-focal
 WORKDIR /app
+
+# Create target directory
+RUN mkdir -p target
 
 # Copy the built JAR from build stage
-COPY --from=build /app/target/library-management-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/library-management-0.0.1-SNAPSHOT.jar target/
+
+# Make the JAR executable
+RUN chmod +x target/library-management-0.0.1-SNAPSHOT.jar
 
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["java", "-jar", "app.jar"] 
+# Run the application with debug output
+CMD ["java", "-jar", "target/library-management-0.0.1-SNAPSHOT.jar"] 

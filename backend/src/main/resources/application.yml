@@ -11,10 +11,17 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        # Disable second-level cache
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+  # Disable Spring Boot's cache auto-configuration
+  cache:
+    type: none
   datasource:
-    url: jdbc:postgresql://localhost:5432/library_db
+    url: jdbc:postgresql://postgres:5432/librarydb
     username: postgres
-    password: password
+    password: postgres
     driver-class-name: org.postgresql.Driver
   
   # H2 Database for development (comment out PostgreSQL above to use H2)

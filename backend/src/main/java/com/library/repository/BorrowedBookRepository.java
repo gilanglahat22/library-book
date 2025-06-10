@@ -25,10 +25,12 @@ public interface BorrowedBookRepository extends JpaRepository<BorrowedBook, Long
     
     Page<BorrowedBook> findByMemberIdAndStatus(Long memberId, BorrowStatus status, Pageable pageable);
     
-    @Query("SELECT bb FROM BorrowedBook bb WHERE " +
-           "LOWER(bb.book.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(bb.member.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(bb.member.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    @Query("SELECT DISTINCT bb FROM BorrowedBook bb " +
+           "LEFT JOIN FETCH bb.book b " +
+           "LEFT JOIN FETCH bb.member m " +
+           "WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(m.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(m.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     Page<BorrowedBook> findBySearchTerm(@Param("searchTerm") String searchTerm, Pageable pageable);
     
     @Query("SELECT bb FROM BorrowedBook bb WHERE bb.borrowDate = :borrowDate")

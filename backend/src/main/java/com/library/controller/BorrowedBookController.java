@@ -115,21 +115,13 @@ public class BorrowedBookController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "borrowDate") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(defaultValue = "desc") String sortDir) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
                 Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<BorrowedBook> borrowedBooks;
-        if (startDate != null && endDate != null) {
-            borrowedBooks = borrowedBookService.findBySearchTermAndDateRange(query, startDate, endDate, pageable);
-        } else {
-            borrowedBooks = borrowedBookService.findBySearchTerm(query, pageable);
-        }
-        
+        Page<BorrowedBook> borrowedBooks = borrowedBookService.findBySearchTerm(query, pageable);
         return ResponseEntity.ok(borrowedBooks);
     }
     

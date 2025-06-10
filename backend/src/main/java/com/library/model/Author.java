@@ -7,14 +7,23 @@ import jakarta.validation.constraints.Size;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "authors")
+@Table(name = "authors", indexes = {
+    @Index(name = "idx_author_name", columnList = "name"),
+    @Index(name = "idx_author_nationality", columnList = "nationality")
+})
 @EntityListeners(AuditingEntityListener.class)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Author {
     
     @Id
@@ -50,8 +59,6 @@ public class Author {
     private Set<Book> books = new HashSet<>();
     
     // Constructors
-    public Author() {}
-    
     public Author(String name, String biography, String nationality, Integer birthYear) {
         this.name = name;
         this.biography = biography;

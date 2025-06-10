@@ -1,21 +1,17 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { Navigation } from '@/components/Navigation'
-import { Toaster } from 'react-hot-toast'
-import { Providers } from './providers'
+'use client';
 
-const inter = Inter({ subsets: ['latin'] })
+import { Inter } from 'next/font/google';
+import { Toaster } from 'react-hot-toast';
+import { Providers } from './providers';
+import { Navigation } from '@/components/Navigation';
+import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'Library Management System',
-  description: 'A comprehensive library management system for books, authors, and members',
-}
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -27,18 +23,9 @@ export default function RootLayout({
               {children}
             </main>
           </div>
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-            }}
-          />
+          <Toaster />
         </Providers>
       </body>
     </html>
-  )
+  );
 } 
