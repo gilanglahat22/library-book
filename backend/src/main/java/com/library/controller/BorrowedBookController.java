@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/borrowed-books")
+@RequestMapping("/borrowed-books")
 @CrossOrigin(origins = "http://localhost:3000")
 @Tag(name = "Borrowed Books", description = "Endpoints for managing borrowed books")
 public class BorrowedBookController {

@@ -3,12 +3,12 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: library-postgres
     environment:
-      POSTGRES_DB: librarydb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME:-librarydb}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -17,7 +17,7 @@ services:
       - library-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
@@ -28,15 +28,29 @@ services:
       dockerfile: Dockerfile
     container_name: library-backend
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT:-8080}:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/librarydb
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: "true"
-      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      # Database Configuration
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/librarydb}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      
+      # API Key Configuration
+      API_KEY_HEADER_NAME: ${API_KEY_HEADER_NAME:-X-API-KEY}
+      API_KEY_ADMIN: ${API_KEY_ADMIN:-admin-api-key-123}
+      API_KEY_BOOKS: ${API_KEY_BOOKS:-books-api-key-456}
+      API_KEY_AUTHORS: ${API_KEY_AUTHORS:-authors-api-key-789}
+      API_KEY_BORROWED_BOOKS: ${API_KEY_BORROWED_BOOKS:-borrowed-books-api-key-101}
+      
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-true}
+      SPRING_JPA_FORMAT_SQL: ${SPRING_JPA_FORMAT_SQL:-true}
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,11 +65,11 @@ services:
       dockerfile: Dockerfile
     container_name: library-frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     environment:
       - NODE_ENV=development
-      - PORT=3000
-      - HOSTNAME=0.0.0.0
+      - REACT_APP_API_URL=http://localhost:${SERVER_PORT:-8080}
+      - REACT_APP_API_KEY_HEADER=${API_KEY_HEADER_NAME:-X-API-KEY}
     volumes:
       - ./frontend:/app
       - /app/node_modules

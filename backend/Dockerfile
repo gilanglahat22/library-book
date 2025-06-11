@@ -1,48 +1,58 @@
 # Build stage
-FROM maven:3.9.5-eclipse-temurin-17-focal AS build
+FROM maven:3.8.4-openjdk-17-slim AS build
 WORKDIR /app
 
-# Copy pom.xml first to cache dependencies
+# Copy maven files first to leverage Docker cache
 COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw .
+COPY mvnw.cmd .
 
-# Download dependencies (this layer will be cached if pom.xml doesn't change)
-RUN mvn dependency:go-offline
+# Download dependencies
+RUN mvn dependency:go-offline -B
 
 # Copy source code
-COPY src ./src
-
-# Show directory structure before build
-RUN echo "Directory structure before build:" && \
-    ls -la && \
-    echo "Source directory contents:" && \
-    ls -la src/main/java/com/library
+COPY src src
 
 # Build the application
-RUN mvn clean package -DskipTests
-
-# Show build results
-RUN echo "Build results:" && \
-    ls -la target/ && \
-    echo "JAR file details:" && \
-    find /app -name "*.jar" -type f -ls && \
-    echo "JAR file contents:" && \
-    jar tvf target/library-management-0.0.1-SNAPSHOT.jar
+RUN mvn package -DskipTests
 
 # Runtime stage
-FROM eclipse-temurin:17-jre-focal
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Create target directory
-RUN mkdir -p target
+# Create volume for configuration
+VOLUME /app/config
 
-# Copy the built JAR from build stage
-COPY --from=build /app/target/library-management-0.0.1-SNAPSHOT.jar app.jar
+# Default environment variables - these will be overridden by .env file
+ENV API_KEY_HEADER_NAME=X-API-KEY \
+    API_KEY_ADMIN=admin-api-key-123 \
+    API_KEY_BOOKS=books-api-key-456 \
+    API_KEY_AUTHORS=authors-api-key-789 \
+    API_KEY_BORROWED_BOOKS=borrowed-books-api-key-101 \
+    SPRING_JPA_HIBERNATE_DDL_AUTO=update \
+    SPRING_JPA_SHOW_SQL=true \
+    SPRING_JPA_FORMAT_SQL=true
 
-# Make the JAR executable
-RUN chmod +x app.jar
+# Copy the built JAR file
+COPY --from=build /app/target/*.jar app.jar
 
-# Expose port
-EXPOSE 8080
+# Create a non-root user
+RUN addgroup --system --gid 1001 appuser \
+    && adduser --system --uid 1001 --ingroup appuser appuser
+USER appuser
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"] 
+# Run the application with explicit reference to environment variables
+ENTRYPOINT ["java", \
+            "-Dspring.datasource.url=${DB_URL}", \
+            "-Dspring.datasource.username=${DB_USERNAME}", \
+            "-Dspring.datasource.password=${DB_PASSWORD}", \
+            "-Dapi.key.header.name=${API_KEY_HEADER_NAME}", \
+            "-DAPI_KEY_ADMIN=${API_KEY_ADMIN}", \
+            "-DAPI_KEY_BOOKS=${API_KEY_BOOKS}", \
+            "-DAPI_KEY_AUTHORS=${API_KEY_AUTHORS}", \
+            "-DAPI_KEY_BORROWED_BOOKS=${API_KEY_BORROWED_BOOKS}", \
+            "-Dspring.jpa.hibernate.ddl-auto=${SPRING_JPA_HIBERNATE_DDL_AUTO}", \
+            "-Dspring.jpa.show-sql=${SPRING_JPA_SHOW_SQL}", \
+            "-Dspring.jpa.properties.hibernate.format_sql=${SPRING_JPA_FORMAT_SQL}", \
+            "-jar", "app.jar"] 
