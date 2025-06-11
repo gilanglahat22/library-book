@@ -32,16 +32,16 @@ public class WebSecurityConfig {
     @Value("${api.key.header.name:X-API-KEY}")
     private String apiKeyHeaderName;
     
-    @Value("${API_KEY_ADMIN:admin-api-key-123}")
+    @Value("${api.key.admin:admin-api-key-123}")
     private String adminApiKey;
     
-    @Value("${API_KEY_BOOKS:books-api-key-456}")
+    @Value("${api.key.books:books-api-key-456}")
     private String booksApiKey;
     
-    @Value("${API_KEY_AUTHORS:authors-api-key-789}")
+    @Value("${api.key.authors:authors-api-key-789}")
     private String authorsApiKey;
     
-    @Value("${API_KEY_BORROWED_BOOKS:borrowed-books-api-key-101}")
+    @Value("${api.key.borrowed-books:borrowed-books-api-key-101}")
     private String borrowedBooksApiKey;
 
     @Bean

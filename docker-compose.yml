@@ -21,36 +21,34 @@ services:
       timeout: 5s
       retries: 5
 
-  # Spring Boot Backend
-  backend:
+  # API Integrator Service
+  api_integrator:
     build:
-      context: ./backend
+      context: ./api_integrator
       dockerfile: Dockerfile
-    container_name: library-backend
+    container_name: library-api-integrator
     ports:
-      - "${SERVER_PORT:-8080}:8080"
+      - "${API_INTEGRATOR_PORT:-8080}:8080"
     environment:
       # Database Configuration
-      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/librarydb}
-      DB_USERNAME: ${DB_USERNAME:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_URL: jdbc:postgresql://postgres:5432/librarydb
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
       
-      # API Key Configuration
-      API_KEY_HEADER_NAME: ${API_KEY_HEADER_NAME:-X-API-KEY}
-      API_KEY_ADMIN: ${API_KEY_ADMIN:-admin-api-key-123}
-      API_KEY_BOOKS: ${API_KEY_BOOKS:-books-api-key-456}
-      API_KEY_AUTHORS: ${API_KEY_AUTHORS:-authors-api-key-789}
-      API_KEY_BORROWED_BOOKS: ${API_KEY_BORROWED_BOOKS:-borrowed-books-api-key-101}
+      # API Key Configuration - using dot notation to match Spring property naming
+      api.key.header.name: X-API-KEY
+      api.key.admin: admin-api-key-123
+      api.key.books: books-api-key-456
+      api.key.authors: authors-api-key-789
+      api.key.borrowed-books: borrowed-books-api-key-101
       
       # JPA Configuration
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
-      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-true}
-      SPRING_JPA_FORMAT_SQL: ${SPRING_JPA_FORMAT_SQL:-true}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_FORMAT_SQL: true
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-    env_file:
-      - ./backend/.env
     volumes:
-      - ./backend/logs:/app/logs
+      - ./api_integrator/logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,23 +56,57 @@ services:
       - library-network
     restart: unless-stopped
 
-  # React Frontend (Optional - can be run separately in development)
+  # Main API Service
+  main_api:
+    build:
+      context: ./main_api
+      dockerfile: Dockerfile
+    container_name: library-main-api
+    ports:
+      - "${MAIN_API_PORT:-8090}:8090"
+    environment:
+      # Server Configuration
+      SERVER_PORT: ${MAIN_API_PORT:-8090}
+      SPRING_PROFILES_ACTIVE: prod
+      
+      # API Integrator Configuration
+      API_INTEGRATOR_BASE_URL: http://api_integrator:8080
+      API_INTEGRATOR_TIMEOUT: 5000
+      
+      # API Key Configuration
+      API_KEY_HEADER_NAME: X-API-KEY
+      API_KEY_ADMIN: admin-api-key-123
+      API_KEY_BOOKS: books-api-key-456
+      API_KEY_AUTHORS: authors-api-key-789
+      API_KEY_BORROWED_BOOKS: borrowed-books-api-key-101
+      
+      # Security Configuration - Allow frontend container and localhost
+      ALLOWED_IPS: 127.0.0.1,::1,frontend,172.17.0.1
+      FRONTEND_IP: frontend
+    volumes:
+      - ./main_api/logs:/app/logs
+    depends_on:
+      - api_integrator
+    networks:
+      - library-network
+    restart: unless-stopped
+
+  # Next.js Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: library-frontend
     ports:
-      - "3000:80"
+      - "3000:3000"
     environment:
       - NODE_ENV=development
-      - REACT_APP_API_URL=http://localhost:${SERVER_PORT:-8080}
-      - REACT_APP_API_KEY_HEADER=${API_KEY_HEADER_NAME:-X-API-KEY}
+      - NEXT_PUBLIC_API_URL=http://localhost:8090/api
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
-      - backend
+      - main_api
     networks:
       - library-network
 

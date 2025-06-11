@@ -115,4 +115,8 @@ api:
   key:
     header:
       name: ${API_KEY_HEADER_NAME:X-API-KEY}
+    admin: ${API_KEY_ADMIN:admin-api-key-123}
+    books: ${API_KEY_BOOKS:books-api-key-456}
+    authors: ${API_KEY_AUTHORS:authors-api-key-789}
+    borrowed-books: ${API_KEY_BORROWED_BOOKS:borrowed-books-api-key-101}
     enabled: true 

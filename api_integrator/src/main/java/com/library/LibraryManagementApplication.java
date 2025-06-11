@@ -24,7 +24,7 @@ public class LibraryManagementApplication {
     @Value("${api.key.header.name:X-API-KEY}")
     private String apiKeyHeaderName;
     
-    @Value("${API_KEY_ADMIN:admin-api-key-123}")
+    @Value("${api.key.admin:admin-api-key-123}")
     private String adminApiKey;
 
     public static void main(String[] args) {

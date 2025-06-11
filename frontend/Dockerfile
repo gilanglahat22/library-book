@@ -16,7 +16,6 @@ COPY . .
 # Set environment variables
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-ENV NODE_ENV="development"
 
 # Expose port
 EXPOSE 3000

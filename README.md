@@ -1,238 +1,199 @@
 # Library Management System
 
-A full-stack web application to manage a library's books, authors, and members with CRUD operations, search functionality, and responsive UI.
+Sistem manajemen perpustakaan dengan arsitektur microservices.
 
-## Features
+## Arsitektur Sistem
 
-### 1. Responsive UI
-- Mobile, tablet, and desktop compatible layout
-- Modern and clean design with Bootstrap/Tailwind CSS
+Sistem ini terdiri dari beberapa komponen:
 
-### 2. Data Management with Relationships
-- **Books**: Related to Authors
-- **Members**: Library member management
-- **BorrowedBooks**: Tracks which member borrowed which book
-- **Authors**: Author information management
-- Pagination support for all data lists
+1. **Database PostgreSQL**: Penyimpanan data untuk aplikasi
+2. **API Integrator**: Layanan Java Spring Boot yang menangani akses langsung ke database
+3. **Main API**: Layanan Java Spring Boot yang bertindak sebagai API Gateway dengan keamanan IP statis
+4. **Frontend**: Aplikasi Next.js untuk antarmuka pengguna
 
-### 3. CRUD Operations
-- **Books**: Add, edit, delete, and list books
-- **Authors**: Add, edit, delete, and list authors
-- **Members**: Add, edit, delete, and list members
-- **BorrowedBooks**: Add, edit, delete, and list borrowed books
+### System Design & Architecture
 
-### 4. Search Functionality
-- Search borrowed books by:
-  - Book title
-  - Member name
-  - Borrow date
-- Real-time search with pagination
-
-## Tech Stack
-
-### Frontend
-- **React 18** with Next.js 14
-- **TypeScript** for type safety
-- **Tailwind CSS** for styling
-- **React Query** for data fetching
-- **React Hook Form** for form management
-
-### Backend
-- **Java 17** with Spring Boot 3.1
-- **Spring Data JPA** for database operations
-- **PostgreSQL** as primary database
-- **Spring Security** for authentication
-- **Maven** for dependency management
-
-### Database
-- **PostgreSQL** for relational data
-- **H2** for development/testing
-
-## Project Structure
-
-```
-library-management/
-├── backend/                 # Spring Boot application
-│   ├── src/main/java/
-│   │   └── com/library/
-│   │       ├── LibraryApplication.java
-│   │       ├── controller/  # REST controllers
-│   │       ├── model/       # Entity classes
-│   │       ├── repository/  # Data repositories
-│   │       ├── service/     # Business logic
-│   │       └── dto/         # Data transfer objects
-│   ├── src/main/resources/
-│   │   ├── application.yml
-│   │   └── schema.sql
-│   └── pom.xml
-├── frontend/               # React/Next.js application
-│   ├── components/         # Reusable components
-│   ├── pages/             # Next.js pages
-│   ├── styles/            # CSS/Tailwind styles
-│   ├── utils/             # Utility functions
-│   ├── types/             # TypeScript types
-│   └── package.json
-├── docker-compose.yml     # Docker configuration
-└── README.md
+```mermaid
+flowchart LR
+    subgraph "Client Layer"
+        A[Client<br/>Browser]
+    end
+    
+    subgraph "Frontend Layer"
+        B[Frontend<br/>Next.js]
+    end
+    
+    subgraph "API Gateway Layer"
+        C[Main API<br/>Spring Boot]
+    end
+    
+    subgraph "Backend Layer"
+        D[API Integrator<br/>Spring Boot]
+    end
+    
+    subgraph "Data Layer"
+        E[(PostgreSQL<br/>Database)]
+    end
+    
+    A --"HTTP/HTTPS"--> B
+    B --"REST API<br/>IP Whitelist"--> C
+    C --"REST API<br/>API Key Auth"--> D
+    D --"JDBC"--> E
+    
+    classDef client fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#333,rounded
+    classDef frontend fill:#bbdefb,stroke:#1976d2,stroke-width:2px,color:#333,rounded
+    classDef gateway fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#333,rounded
+    classDef backend fill:#ffe0b2,stroke:#f57c00,stroke-width:2px,color:#333,rounded
+    classDef data fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px,color:#333,rounded
+    
+    class A client
+    class B frontend
+    class C gateway
+    class D backend
+    class E data
 ```
 
-## Getting Started
+#### Alur Data & Komunikasi
 
-### Prerequisites
-- **Java 17+** (for backend development)
-- **Node.js 18+** (for frontend development)
-- **PostgreSQL 14+** (for database)
-- **Docker & Docker Compose** (recommended for easy setup)
-- **Maven 3.6+** (for backend build)
+1. **Client** mengakses aplikasi melalui browser
+2. **Frontend (Next.js)** menyajikan UI dan mengirim request ke Main API
+3. **Main API** melakukan:
+   - Validasi IP (hanya menerima request dari IP yang diizinkan)
+   - Meneruskan request ke API Integrator dengan API key yang sesuai
+   - Menangani circuit breaking dan retry jika API Integrator tidak tersedia
+4. **API Integrator** melakukan:
+   - Validasi API key
+   - Operasi CRUD pada database
+   - Mengembalikan respons ke Main API
+5. **PostgreSQL Database** menyimpan semua data aplikasi
 
-### Quick Start with Docker (Recommended)
+#### Arsitektur Keamanan
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd library-management
-   ```
+```mermaid
+flowchart TD
+    subgraph "Security Architecture"
+        direction LR
+        Client([Client]) --> Frontend([Frontend])
+        Frontend --> MainAPI([Main API])
+        MainAPI --> APIIntegrator([API Integrator])
+        
+        ipwhite[IP Whitelist<br/>127.0.0.1, frontend, etc] -.-> MainAPI
+        apikeys[API Keys<br/>books-key, authors-key, etc] -.-> APIIntegrator
+    end
+    
+    classDef client fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#333,rounded
+    classDef frontend fill:#bbdefb,stroke:#1976d2,stroke-width:2px,color:#333,rounded
+    classDef gateway fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#333,rounded
+    classDef backend fill:#ffe0b2,stroke:#f57c00,stroke-width:2px,color:#333,rounded
+    classDef security fill:#f5f5f5,stroke:#616161,stroke-width:1px,color:#333,stroke-dasharray: 5 5
+    
+    class Client client
+    class Frontend frontend
+    class MainAPI gateway
+    class APIIntegrator backend
+    class ipwhite,apikeys security
+```
 
-2. **Start all services with Docker Compose**
+#### Komponen Detail
+
+1. **Frontend (Next.js)**
+   - Aplikasi Single Page Application berbasis React
+   - Tailwind CSS untuk styling
+   - Pages untuk navigasi antar halaman
+   - Components untuk UI yang reusable
+   - API client untuk komunikasi dengan Main API
+
+2. **Main API (Java Spring Boot)**
+   - API Gateway yang meneruskan request ke API Integrator
+   - Security dengan IP Whitelist
+   - Circuit Breaker dengan Resilience4j
+   - Controllers untuk setiap domain (Books, Authors, Borrowed Books)
+   - Swagger UI untuk dokumentasi API
+
+3. **API Integrator (Java Spring Boot)**
+   - Layanan backend yang melakukan akses database
+   - Security dengan API Key
+   - Controllers, Services, dan Repositories
+   - Model/Entity untuk representasi data
+   - Swagger UI untuk dokumentasi API
+
+4. **Database PostgreSQL**
+   - Tabel untuk Books, Authors, Members, dan Borrowed Books
+   - Relasi antar entitas
+   - Indeks untuk performa query
+
+## Struktur Proyek
+
+```
+library-book/
+├── api_integrator/   # Integrator API dengan Java Spring Boot
+├── main_api/         # Main API dengan Java Spring Boot dan IP security
+├── frontend/         # Frontend dengan Next.js
+├── docker-compose.yml # Konfigurasi Docker Compose
+```
+
+## Prasyarat
+
+- Docker dan Docker Compose
+- JDK 17 (untuk pengembangan lokal)
+- Node.js 18+ (untuk pengembangan frontend lokal)
+
+## Cara Menjalankan
+
+### Menggunakan Docker Compose
+
+1. Pastikan Docker dan Docker Compose terinstal
+2. Sesuaikan nilai di file `.env` jika diperlukan
+3. Jalankan semua layanan:
+
    ```bash
    docker-compose up -d
    ```
 
-3. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8080/api
-   - Swagger UI: http://localhost:8080/api/swagger-ui.html
+4. Untuk menghentikan semua layanan:
 
-4. **Stop the services**
    ```bash
    docker-compose down
    ```
 
-### Manual Setup (Development)
+### Akses Layanan
 
-#### Database Setup
-1. Install PostgreSQL and create a database:
-   ```sql
-   CREATE DATABASE library_db;
-   CREATE USER postgres WITH PASSWORD 'password';
-   GRANT ALL PRIVILEGES ON DATABASE library_db TO postgres;
-   ```
+- Frontend: http://localhost:3000
+- Main API: http://localhost:8090/api
+- API Integrator: http://localhost:8080 (tidak diakses langsung oleh klien)
+- Swagger UI untuk Main API: http://localhost:8090/api/swagger-ui.html
+- Swagger UI untuk API Integrator: http://localhost:8080/swagger-ui.html
 
-2. Or use Docker for PostgreSQL only:
+## Pengembangan Manual Tanpa Docker
+
+### API Integrator
+
    ```bash
-   docker run --name library-postgres -e POSTGRES_DB=library_db -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres:15-alpine
-   ```
+cd api_integrator
+mvn spring-boot:run
+```
 
-#### Backend Setup
-1. Navigate to backend directory:
-   ```bash
-   cd backend
-   ```
+### Main API
 
-2. Build and run the Spring Boot application:
    ```bash
-   # Using Maven wrapper (recommended)
-   ./mvnw clean install
-   ./mvnw spring-boot:run
-   
-   # Or using local Maven installation
-   mvn clean install
+cd main_api
    mvn spring-boot:run
    ```
 
-3. The backend will be available at `http://localhost:8080`
-   - API endpoints: `http://localhost:8080/api/`
-   - Swagger documentation: `http://localhost:8080/api/swagger-ui.html`
+### Frontend
 
-#### Frontend Setup
-1. Navigate to frontend directory:
    ```bash
    cd frontend
-   ```
-
-2. Install dependencies and start development server:
-   ```bash
    npm install
    npm run dev
    ```
 
-3. The frontend will be available at `http://localhost:3000`
+## Keamanan
 
-### Configuration
+- Main API menggunakan keamanan berbasis IP (whitelist) untuk membatasi akses hanya dari frontend
+- API Integrator menggunakan API keys untuk otentikasi yang berbeda untuk setiap endpoint
+- Main API bertindak sebagai proxy yang menggunakan API keys yang sesuai saat mengakses API Integrator
 
-#### Backend Configuration (`backend/src/main/resources/application.yml`)
-- Database connection settings
-- Server port configuration
-- CORS settings
-- Logging levels
+## Environment Variables
 
-#### Frontend Configuration
-- API base URL in `frontend/next.config.js`
-- Environment variables in `.env.local` (create if needed):
-  ```
-  NEXT_PUBLIC_API_URL=http://localhost:8080/api
-  ```
-
-### Sample Data
-The application automatically loads sample data on first startup:
-- 5 Authors (F. Scott Fitzgerald, George Orwell, etc.)
-- 6 Books (The Great Gatsby, 1984, etc.)
-- 5 Members (Jack Smith, Emily Johnson, etc.)
-- 4 Borrowed book records with different statuses
-
-### Troubleshooting
-
-#### Backend Issues
-- **Port 8080 already in use**: Change server port in `application.yml`
-- **Database connection failed**: Verify PostgreSQL is running and credentials are correct
-- **Build failures**: Ensure Java 17+ is installed and JAVA_HOME is set
-
-#### Frontend Issues
-- **Port 3000 already in use**: Next.js will automatically suggest an alternative port
-- **API connection failed**: Verify backend is running and API URL is correct
-- **Build errors**: Delete `node_modules` and `package-lock.json`, then run `npm install`
-
-#### Docker Issues
-- **Port conflicts**: Modify ports in `docker-compose.yml`
-- **Build failures**: Run `docker-compose build --no-cache`
-- **Permission issues**: On Linux/Mac, ensure Docker has proper permissions
-
-## API Endpoints
-
-### Books
-- `GET /api/books` - List all books with pagination
-- `GET /api/books/{id}` - Get book by ID
-- `POST /api/books` - Create new book
-- `PUT /api/books/{id}` - Update book
-- `DELETE /api/books/{id}` - Delete book
-
-### Authors
-- `GET /api/authors` - List all authors
-- `POST /api/authors` - Create new author
-- `PUT /api/authors/{id}` - Update author
-- `DELETE /api/authors/{id}` - Delete author
-
-### Members
-- `GET /api/members` - List all members
-- `POST /api/members` - Create new member
-- `PUT /api/members/{id}` - Update member
-- `DELETE /api/members/{id}` - Delete member
-
-### Borrowed Books
-- `GET /api/borrowed-books` - List all borrowed books
-- `GET /api/borrowed-books/search` - Search borrowed books
-- `POST /api/borrowed-books` - Create new borrowed book record
-- `PUT /api/borrowed-books/{id}` - Update borrowed book
-- `DELETE /api/borrowed-books/{id}` - Delete borrowed book record
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License. 
+Semua konfigurasi dapat disesuaikan melalui file `.env` pada masing-masing folder proyek.
