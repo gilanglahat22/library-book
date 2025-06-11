@@ -10,6 +10,7 @@ import com.library.service.MemberService;
 import com.library.service.BorrowedBookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -145,15 +146,15 @@ public class DataInitializer implements CommandLineRunner {
         returnedPride.setReturnDate(LocalDate.now().minusDays(12));
         returnedPride.setStatus(BorrowedBook.BorrowStatus.RETURNED);
 
-        borrowedBookService.save(borrowedGatsby);
-        borrowedBookService.save(borrowed1984);
-        borrowedBookService.save(borrowedHobbit);
-        borrowedBookService.save(returnedPride);
+        borrowedBookService.borrowBook(borrowedGatsby);
+        borrowedBookService.borrowBook(borrowed1984);
+        borrowedBookService.borrowBook(borrowedHobbit);
+        borrowedBookService.borrowBook(returnedPride);
 
         System.out.println("Sample data initialized successfully!");
         System.out.println("Created " + authorService.findAll().size() + " authors");
         System.out.println("Created " + bookService.findAll().size() + " books");
         System.out.println("Created " + memberService.findAll().size() + " members");
-        System.out.println("Created " + borrowedBookService.findAll().size() + " borrowed book records");
+        System.out.println("Created " + borrowedBookService.findAll(Pageable.unpaged()).getContent().size() + " borrowed book records");
     }
 } 

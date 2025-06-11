@@ -1,8 +1,8 @@
 package com.library.service;
 
+import com.library.model.Book;
 import com.library.model.BorrowedBook;
 import com.library.model.BorrowedBook.BorrowStatus;
-import com.library.model.Book;
 import com.library.model.Member;
 import com.library.repository.BorrowedBookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +24,9 @@ public class BorrowedBookService {
     private final MemberService memberService;
     
     @Autowired
-    public BorrowedBookService(BorrowedBookRepository borrowedBookRepository, 
-                               BookService bookService, 
-                               MemberService memberService) {
+    public BorrowedBookService(BorrowedBookRepository borrowedBookRepository,
+                              BookService bookService,
+                              MemberService memberService) {
         this.borrowedBookRepository = borrowedBookRepository;
         this.bookService = bookService;
         this.memberService = memberService;
@@ -36,24 +36,28 @@ public class BorrowedBookService {
         return borrowedBookRepository.findAll(pageable);
     }
     
-    public List<BorrowedBook> findAll() {
-        return borrowedBookRepository.findAll();
-    }
-    
     public Optional<BorrowedBook> findById(Long id) {
         return borrowedBookRepository.findById(id);
     }
     
-    public List<BorrowedBook> findByMemberId(Long memberId) {
-        return borrowedBookRepository.findByMemberId(memberId);
-    }
-    
-    public List<BorrowedBook> findByBookId(Long bookId) {
-        return borrowedBookRepository.findByBookId(bookId);
-    }
-    
     public Page<BorrowedBook> findByStatus(BorrowStatus status, Pageable pageable) {
         return borrowedBookRepository.findByStatus(status, pageable);
+    }
+    
+    public Page<BorrowedBook> findByMemberId(Long memberId, Pageable pageable) {
+        return borrowedBookRepository.findByMemberId(memberId, pageable);
+    }
+    
+    public Page<BorrowedBook> findByBookId(Long bookId, Pageable pageable) {
+        return borrowedBookRepository.findByBookId(bookId, pageable);
+    }
+    
+    public Page<BorrowedBook> findByBorrowDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        return borrowedBookRepository.findByBorrowDateBetween(startDate, endDate, pageable);
+    }
+    
+    public Page<BorrowedBook> findOverdueBooks(Pageable pageable) {
+        return borrowedBookRepository.findByStatusAndDueDateBefore(BorrowStatus.BORROWED, LocalDate.now(), pageable);
     }
     
     public Page<BorrowedBook> findBySearchTerm(String searchTerm, Pageable pageable) {
@@ -65,10 +69,6 @@ public class BorrowedBookService {
     
     public Page<BorrowedBook> findByBorrowDate(LocalDate borrowDate, Pageable pageable) {
         return borrowedBookRepository.findByBorrowDate(borrowDate, pageable);
-    }
-    
-    public Page<BorrowedBook> findByBorrowDateRange(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return borrowedBookRepository.findByBorrowDateBetween(startDate, endDate, pageable);
     }
     
     public Page<BorrowedBook> findBySearchTermAndDateRange(String searchTerm, LocalDate startDate, LocalDate endDate, Pageable pageable) {
@@ -90,124 +90,70 @@ public class BorrowedBookService {
         return borrowedBookRepository.findActiveBorrowsByMember(memberId);
     }
     
-    public BorrowedBook borrowBook(Long memberId, Long bookId, LocalDate dueDate, String notes) {
-        // Validate member can borrow
-        if (!memberService.canBorrow(memberId)) {
-            throw new RuntimeException("Member cannot borrow books at this time");
+    public BorrowedBook borrowBook(BorrowedBook borrowedBook) {
+        Book book = bookService.findById(borrowedBook.getBook().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Book not found"));
+        
+        Member member = memberService.findById(borrowedBook.getMember().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+        
+        if (book.getAvailableCopies() <= 0) {
+            throw new IllegalArgumentException("No copies available for borrowing");
         }
         
-        // Validate book is available
-        if (!bookService.isAvailable(bookId)) {
-            throw new RuntimeException("Book is not available for borrowing");
+        // Set default values if not provided
+        if (borrowedBook.getBorrowDate() == null) {
+            borrowedBook.setBorrowDate(LocalDate.now());
         }
-        
-        // Get member and book entities
-        Member member = memberService.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("Member not found"));
-        Book book = bookService.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
-        
-        // Create borrow record
-        BorrowedBook borrowedBook = new BorrowedBook();
-        borrowedBook.setMember(member);
-        borrowedBook.setBook(book);
-        borrowedBook.setBorrowDate(LocalDate.now());
-        borrowedBook.setDueDate(dueDate != null ? dueDate : LocalDate.now().plusWeeks(2)); // Default 2 weeks
+        if (borrowedBook.getDueDate() == null) {
+            borrowedBook.setDueDate(borrowedBook.getBorrowDate().plusDays(14)); // Default loan period: 14 days
+        }
         borrowedBook.setStatus(BorrowStatus.BORROWED);
-        borrowedBook.setNotes(notes);
         
-        // Update book availability
-        if (!bookService.borrowBook(bookId)) {
-            throw new RuntimeException("Failed to update book availability");
-        }
+        // Update book available copies
+        book.setAvailableCopies(book.getAvailableCopies() - 1);
+        bookService.save(book);
         
         return borrowedBookRepository.save(borrowedBook);
     }
     
-    public BorrowedBook returnBook(Long borrowedBookId) {
-        BorrowedBook borrowedBook = borrowedBookRepository.findById(borrowedBookId)
-                .orElseThrow(() -> new RuntimeException("Borrowed book record not found"));
-        
-        if (borrowedBook.getStatus() == BorrowStatus.RETURNED) {
-            throw new RuntimeException("Book has already been returned");
-        }
-        
-        // Update borrow record
-        borrowedBook.setReturnDate(LocalDate.now());
-        borrowedBook.setStatus(BorrowStatus.RETURNED);
-        
-        // Update book availability
-        bookService.returnBook(borrowedBook.getBook().getId());
-        
-        return borrowedBookRepository.save(borrowedBook);
-    }
-    
-    public BorrowedBook save(BorrowedBook borrowedBook) {
-        validateBorrowedBook(borrowedBook);
-        return borrowedBookRepository.save(borrowedBook);
-    }
-    
-    public BorrowedBook update(Long id, BorrowedBook borrowedBookDetails) {
-        BorrowedBook borrowedBook = borrowedBookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Borrowed book not found with id: " + id));
-        
-        // Only allow certain fields to be updated
-        borrowedBook.setDueDate(borrowedBookDetails.getDueDate());
-        borrowedBook.setNotes(borrowedBookDetails.getNotes());
-        
-        // Handle status changes carefully
-        if (borrowedBookDetails.getStatus() != null && borrowedBookDetails.getStatus() != borrowedBook.getStatus()) {
-            if (borrowedBookDetails.getStatus() == BorrowStatus.RETURNED && borrowedBook.getStatus() != BorrowStatus.RETURNED) {
-                borrowedBook.setReturnDate(LocalDate.now());
-                bookService.returnBook(borrowedBook.getBook().getId());
+    public Optional<BorrowedBook> returnBook(Long id, LocalDate returnDate) {
+        Optional<BorrowedBook> borrowedBookOpt = borrowedBookRepository.findById(id);
+        if (borrowedBookOpt.isPresent()) {
+            BorrowedBook borrowedBook = borrowedBookOpt.get();
+            if (borrowedBook.getStatus() != BorrowStatus.BORROWED) {
+                throw new IllegalArgumentException("Book is not in borrowed status");
             }
-            borrowedBook.setStatus(borrowedBookDetails.getStatus());
+            
+            borrowedBook.setReturnDate(returnDate);
+            borrowedBook.setStatus(BorrowStatus.RETURNED);
+            
+            // Update book available copies
+            Book book = borrowedBook.getBook();
+            book.setAvailableCopies(book.getAvailableCopies() + 1);
+            bookService.save(book);
+            
+            return Optional.of(borrowedBookRepository.save(borrowedBook));
         }
-        
-        validateBorrowedBook(borrowedBook);
-        return borrowedBookRepository.save(borrowedBook);
+        return Optional.empty();
     }
     
-    public void deleteById(Long id) {
-        BorrowedBook borrowedBook = borrowedBookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Borrowed book not found with id: " + id));
-        
-        // If book is still borrowed, return it first
-        if (borrowedBook.getStatus() == BorrowStatus.BORROWED) {
-            bookService.returnBook(borrowedBook.getBook().getId());
+    public Optional<BorrowedBook> updateStatus(Long id, BorrowStatus status) {
+        Optional<BorrowedBook> borrowedBookOpt = borrowedBookRepository.findById(id);
+        if (borrowedBookOpt.isPresent()) {
+            BorrowedBook borrowedBook = borrowedBookOpt.get();
+            borrowedBook.setStatus(status);
+            return Optional.of(borrowedBookRepository.save(borrowedBook));
         }
-        
+        return Optional.empty();
+    }
+    
+    public void delete(Long id) {
         borrowedBookRepository.deleteById(id);
-    }
-    
-    public void markAsOverdue() {
-        List<BorrowedBook> overdueBooks = borrowedBookRepository.findOverdueBooks(LocalDate.now());
-        for (BorrowedBook borrowedBook : overdueBooks) {
-            if (borrowedBook.getStatus() == BorrowStatus.BORROWED) {
-                borrowedBook.setStatus(BorrowStatus.OVERDUE);
-                borrowedBookRepository.save(borrowedBook);
-            }
-        }
-    }
-    
-    public BorrowedBook markAsLost(Long borrowedBookId) {
-        BorrowedBook borrowedBook = borrowedBookRepository.findById(borrowedBookId)
-                .orElseThrow(() -> new RuntimeException("Borrowed book record not found"));
-        
-        borrowedBook.setStatus(BorrowStatus.LOST);
-        return borrowedBookRepository.save(borrowedBook);
     }
     
     public Long countCurrentBorrows() {
         return borrowedBookRepository.countCurrentBorrows();
-    }
-    
-    public Long countOverdueBooks() {
-        return borrowedBookRepository.countOverdueBooks();
-    }
-    
-    public boolean existsById(Long id) {
-        return borrowedBookRepository.existsById(id);
     }
     
     private void validateBorrowedBook(BorrowedBook borrowedBook) {

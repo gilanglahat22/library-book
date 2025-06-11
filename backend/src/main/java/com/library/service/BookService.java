@@ -35,7 +35,7 @@ public class BookService {
     }
     
     public Optional<Book> findByIdWithAuthor(Long id) {
-        return bookRepository.findByIdWithAuthor(id);
+        return bookRepository.findById(id);
     }
     
     public Optional<Book> findByIsbn(String isbn) {
@@ -112,15 +112,7 @@ public class BookService {
         return bookRepository.save(book);
     }
     
-    public void deleteById(Long id) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
-        
-        Long currentBorrows = bookRepository.countCurrentBorrowsByBook(id);
-        if (currentBorrows > 0) {
-            throw new RuntimeException("Cannot delete book with active borrows. Please return all copies first.");
-        }
-        
+    public void delete(Long id) {
         bookRepository.deleteById(id);
     }
     

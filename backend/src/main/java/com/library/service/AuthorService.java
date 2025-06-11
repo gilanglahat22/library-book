@@ -75,15 +75,7 @@ public class AuthorService {
         return authorRepository.save(author);
     }
     
-    public void deleteById(Long id) {
-        Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Author not found with id: " + id));
-        
-        Long bookCount = authorRepository.countBooksByAuthor(id);
-        if (bookCount > 0) {
-            throw new RuntimeException("Cannot delete author with existing books. Please delete or reassign books first.");
-        }
-        
+    public void delete(Long id) {
         authorRepository.deleteById(id);
     }
     

@@ -19,7 +19,7 @@ spring:
   cache:
     type: none
   datasource:
-    url: jdbc:postgresql://postgres:5432/librarydb
+    url: jdbc:postgresql://localhost:5432/library_db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -37,7 +37,7 @@ spring:
 server:
   port: 8080
   servlet:
-    context-path: /api
+    context-path: /
 
 # CORS configuration
 cors:
@@ -57,8 +57,23 @@ logging:
 springdoc:
   api-docs:
     path: /api-docs
+    enabled: true
+    version: openapi_3_0
   swagger-ui:
     path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+    docExpansion: none
+    tryItOutEnabled: true
+    filter: true
+    syntax-highlight:
+      activated: true
+  packages-to-scan: com.library.controller
+  paths-to-match: /books/**, /authors/**, /borrowed-books/**
+  show-actuator: false
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
     
 # Pagination defaults
 pagination:

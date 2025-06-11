@@ -15,51 +15,42 @@ import java.util.List;
 @Repository
 public interface BorrowedBookRepository extends JpaRepository<BorrowedBook, Long> {
     
-    List<BorrowedBook> findByMemberId(Long memberId);
-    
-    List<BorrowedBook> findByBookId(Long bookId);
-    
-    List<BorrowedBook> findByStatus(BorrowStatus status);
-    
     Page<BorrowedBook> findByStatus(BorrowStatus status, Pageable pageable);
     
-    Page<BorrowedBook> findByMemberIdAndStatus(Long memberId, BorrowStatus status, Pageable pageable);
+    Page<BorrowedBook> findByMemberId(Long memberId, Pageable pageable);
     
-    @Query("SELECT DISTINCT bb FROM BorrowedBook bb " +
-           "LEFT JOIN FETCH bb.book b " +
-           "LEFT JOIN FETCH bb.member m " +
-           "WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(m.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(m.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    Page<BorrowedBook> findBySearchTerm(@Param("searchTerm") String searchTerm, Pageable pageable);
+    Page<BorrowedBook> findByBookId(Long bookId, Pageable pageable);
     
-    @Query("SELECT bb FROM BorrowedBook bb WHERE bb.borrowDate = :borrowDate")
-    Page<BorrowedBook> findByBorrowDate(@Param("borrowDate") LocalDate borrowDate, Pageable pageable);
+    Page<BorrowedBook> findByBorrowDate(LocalDate borrowDate, Pageable pageable);
     
-    @Query("SELECT bb FROM BorrowedBook bb WHERE bb.borrowDate BETWEEN :startDate AND :endDate")
-    Page<BorrowedBook> findByBorrowDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
+    Page<BorrowedBook> findByBorrowDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
     
-    @Query("SELECT bb FROM BorrowedBook bb WHERE bb.dueDate < :currentDate AND bb.status = 'BORROWED'")
-    List<BorrowedBook> findOverdueBooks(@Param("currentDate") LocalDate currentDate);
-    
-    @Query("SELECT bb FROM BorrowedBook bb WHERE bb.dueDate = :date AND bb.status = 'BORROWED'")
-    List<BorrowedBook> findBooksDueOn(@Param("date") LocalDate date);
+    Page<BorrowedBook> findByStatusAndDueDateBefore(BorrowStatus status, LocalDate date, Pageable pageable);
     
     @Query("SELECT bb FROM BorrowedBook bb WHERE " +
-           "(LOWER(bb.book.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(bb.member.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) AND " +
-           "bb.borrowDate BETWEEN :startDate AND :endDate")
-    Page<BorrowedBook> findBySearchTermAndDateRange(@Param("searchTerm") String searchTerm, 
-                                                   @Param("startDate") LocalDate startDate, 
-                                                   @Param("endDate") LocalDate endDate, 
-                                                   Pageable pageable);
+           "LOWER(bb.member.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(bb.book.title) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<BorrowedBook> findBySearchTerm(@Param("searchTerm") String searchTerm, Pageable pageable);
     
-    @Query("SELECT bb FROM BorrowedBook bb WHERE bb.member.id = :memberId AND bb.status != 'RETURNED' ORDER BY bb.borrowDate DESC")
+    @Query("SELECT bb FROM BorrowedBook bb WHERE " +
+           "(LOWER(bb.member.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(bb.book.title) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) AND " +
+           "bb.borrowDate BETWEEN :startDate AND :endDate")
+    Page<BorrowedBook> findBySearchTermAndDateRange(
+            @Param("searchTerm") String searchTerm,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            Pageable pageable);
+    
+    @Query("SELECT bb FROM BorrowedBook bb WHERE bb.status = 'BORROWED' AND bb.dueDate < :date")
+    List<BorrowedBook> findOverdueBooks(@Param("date") LocalDate date);
+    
+    @Query("SELECT bb FROM BorrowedBook bb WHERE bb.dueDate = :date")
+    List<BorrowedBook> findBooksDueOn(@Param("date") LocalDate date);
+    
+    @Query("SELECT bb FROM BorrowedBook bb WHERE bb.member.id = :memberId AND bb.status = 'BORROWED'")
     List<BorrowedBook> findActiveBorrowsByMember(@Param("memberId") Long memberId);
     
     @Query("SELECT COUNT(bb) FROM BorrowedBook bb WHERE bb.status = 'BORROWED'")
     Long countCurrentBorrows();
-    
-    @Query("SELECT COUNT(bb) FROM BorrowedBook bb WHERE bb.status = 'OVERDUE'")
-    Long countOverdueBooks();
 } 

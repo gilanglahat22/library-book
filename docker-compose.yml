@@ -33,12 +33,16 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/librarydb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-    volumes:
-      - backend_target:/app/target
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - library-network
+    restart: unless-stopped
 
   # React Frontend (Optional - can be run separately in development)
   frontend:
@@ -47,10 +51,10 @@ services:
       dockerfile: Dockerfile
     container_name: library-frontend
     ports:
-      - "3002:3002"
+      - "3000:3000"
     environment:
       - NODE_ENV=development
-      - PORT=3002
+      - PORT=3000
       - HOSTNAME=0.0.0.0
     volumes:
       - ./frontend:/app
@@ -62,7 +66,6 @@ services:
 
 volumes:
   postgres_data:
-  backend_target:
 
 networks:
   library-network:

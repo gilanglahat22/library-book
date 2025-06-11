@@ -2,6 +2,13 @@ package com.library.controller;
 
 import com.library.model.Author;
 import com.library.service.AuthorService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,6 +25,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/authors")
 @CrossOrigin(origins = "http://localhost:3000")
+@Tag(name = "Author Management", description = "APIs for managing authors in the library")
 public class AuthorController {
     
     private final AuthorService authorService;
@@ -27,13 +35,20 @@ public class AuthorController {
         this.authorService = authorService;
     }
     
+    @Operation(summary = "Get all authors with pagination and filtering", description = "Retrieves a paginated list of authors with optional search term")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved authors",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = Page.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid input parameters")
+    })
     @GetMapping
     public ResponseEntity<Page<Author>> getAllAuthors(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "name") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir,
-            @RequestParam(required = false) String search) {
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of items per page") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Field to sort by") @RequestParam(defaultValue = "name") String sortBy,
+            @Parameter(description = "Sort direction (asc/desc)") @RequestParam(defaultValue = "asc") String sortDir,
+            @Parameter(description = "Search term for name or nationality") @RequestParam(required = false) String search) {
         
         Sort sort = sortDir.equalsIgnoreCase("desc") ? 
                 Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
@@ -55,9 +70,15 @@ public class AuthorController {
         return ResponseEntity.ok(authors);
     }
     
+    @Operation(summary = "Get author by ID", description = "Retrieves an author by their ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved author"),
+        @ApiResponse(responseCode = "404", description = "Author not found")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<Author> getAuthorById(@PathVariable Long id) {
-        Optional<Author> author = authorService.findById(id);
+    public ResponseEntity<Author> getAuthorById(
+            @Parameter(description = "Author ID") @PathVariable Long id) {
+        Optional<Author> author = authorService.findByIdWithBooks(id);
         return author.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -76,73 +97,70 @@ public class AuthorController {
                 .orElse(ResponseEntity.notFound().build());
     }
     
-    @GetMapping("/by-nationality/{nationality}")
-    public ResponseEntity<List<Author>> getAuthorsByNationality(@PathVariable String nationality) {
+    @Operation(summary = "Get authors by nationality", description = "Retrieves a list of authors by their nationality")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved authors")
+    @GetMapping("/nationality/{nationality}")
+    public ResponseEntity<List<Author>> getAuthorsByNationality(
+            @Parameter(description = "Author nationality") @PathVariable String nationality) {
         List<Author> authors = authorService.findByNationality(nationality);
         return ResponseEntity.ok(authors);
     }
     
-    @GetMapping("/by-birth-year")
+    @Operation(summary = "Get authors by birth year range", description = "Retrieves a list of authors born within a specified year range")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved authors")
+    @GetMapping("/birth-year")
     public ResponseEntity<List<Author>> getAuthorsByBirthYearRange(
-            @RequestParam Integer startYear,
-            @RequestParam Integer endYear) {
+            @Parameter(description = "Start year") @RequestParam Integer startYear,
+            @Parameter(description = "End year") @RequestParam Integer endYear) {
         List<Author> authors = authorService.findByBirthYearRange(startYear, endYear);
         return ResponseEntity.ok(authors);
     }
     
+    @Operation(summary = "Create a new author", description = "Creates a new author in the library")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Author created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input")
+    })
     @PostMapping
-    public ResponseEntity<?> createAuthor(@Valid @RequestBody Author author) {
-        try {
-            // Check if author with same name already exists
-            if (authorService.existsByName(author.getName())) {
-                return ResponseEntity.badRequest()
-                        .body("Author with name '" + author.getName() + "' already exists");
-            }
-            
-            Author savedAuthor = authorService.save(author);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedAuthor);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating author: " + e.getMessage());
-        }
+    public ResponseEntity<Author> createAuthor(
+            @Parameter(description = "Author object to create") @Valid @RequestBody Author author) {
+        Author savedAuthor = authorService.save(author);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedAuthor);
     }
     
+    @Operation(summary = "Update an author", description = "Updates an existing author by their ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Author updated successfully"),
+        @ApiResponse(responseCode = "404", description = "Author not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid input")
+    })
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateAuthor(@PathVariable Long id, @Valid @RequestBody Author authorDetails) {
-        try {
-            if (!authorService.existsById(id)) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            Author updatedAuthor = authorService.update(id, authorDetails);
+    public ResponseEntity<Author> updateAuthor(
+            @Parameter(description = "Author ID") @PathVariable Long id,
+            @Parameter(description = "Updated author object") @Valid @RequestBody Author author) {
+        Optional<Author> existingAuthor = authorService.findById(id);
+        if (existingAuthor.isPresent()) {
+            author.setId(id);
+            Author updatedAuthor = authorService.save(author);
             return ResponseEntity.ok(updatedAuthor);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error updating author: " + e.getMessage());
         }
+        return ResponseEntity.notFound().build();
     }
     
+    @Operation(summary = "Delete an author", description = "Deletes an author by their ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Author deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "Author not found")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteAuthor(@PathVariable Long id) {
-        try {
-            if (!authorService.existsById(id)) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            authorService.deleteById(id);
-            return ResponseEntity.ok().body("Author deleted successfully");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting author: " + e.getMessage());
+    public ResponseEntity<Void> deleteAuthor(
+            @Parameter(description = "Author ID") @PathVariable Long id) {
+        Optional<Author> author = authorService.findById(id);
+        if (author.isPresent()) {
+            authorService.delete(id);
+            return ResponseEntity.noContent().build();
         }
+        return ResponseEntity.notFound().build();
     }
     
     @GetMapping("/{id}/books-count")

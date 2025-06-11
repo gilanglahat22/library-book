@@ -14,12 +14,12 @@ RUN npm ci
 COPY . .
 
 # Set environment variables
-ENV PORT=3002
+ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV="development"
 
 # Expose port
-EXPOSE 3002
+EXPOSE 3000
 
 # Start the development server
-CMD ["npm", "run", "dev", "--", "--port", "3002", "--hostname", "0.0.0.0"]
+CMD ["npm", "run", "dev", "--", "--port", "3000", "--hostname", "0.0.0.0"]
