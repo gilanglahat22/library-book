@@ -20,12 +20,16 @@ public class WebConfig implements WebMvcConfigurer {
         logger.info("Configuring CORS with API Key header: {}", apiKeyHeaderName);
         
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000", "http://localhost:8080")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOrigins(
+                    "http://localhost:8090",
+                    "http://localhost:8080"      // API Integrator direct access
+                )
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .exposedHeaders(apiKeyHeaderName, "Authorization", "Content-Type")
-                .allowCredentials(true);
+                .allowCredentials(true)
+                .maxAge(3600); // 1 hour
         
-        logger.info("CORS configuration completed");
+        logger.info("CORS configuration completed with expanded origins");
     }
 } 

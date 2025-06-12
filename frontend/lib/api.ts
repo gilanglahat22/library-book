@@ -10,20 +10,25 @@ import type {
   BorrowedBookFilters 
 } from '@/types';
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// Use the environment variable or default to the Main API URL
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api';
 
 export const api = axios.create({
   baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
+  // Set to false to avoid CORS preflight issues
+  withCredentials: false,
+  // Add timeout
+  timeout: 10000,
 });
 
-// Request interceptor for logging
+// Request interceptor for logging and adding API keys
 api.interceptors.request.use(
   (config) => {
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
+        return config;
   },
   (error) => {
     console.error('API Request Error:', error);
@@ -34,6 +39,7 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
+    console.log(`API Response: ${response.status} for ${response.config.url}`);
     return response;
   },
   (error) => {

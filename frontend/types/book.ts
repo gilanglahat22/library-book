@@ -3,13 +3,13 @@ import { Author } from './author';
 export interface Book {
   id: number;
   title: string;
-  isbn: string;
+  isbn?: string;
   author: Author;
   category: string;
-  publicationYear: number;
-  publisher: string;
+  publishingYear: number;
   description?: string;
-  available: boolean;
+  totalCopies: number;
+  availableCopies: number;
   createdAt: string;
   updatedAt: string;
 } 

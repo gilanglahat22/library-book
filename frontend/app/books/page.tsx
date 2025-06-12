@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Plus, Edit, Trash2, Eye, Book as BookIcon } from 'lucide-react'
 import Link from 'next/link'
 import { booksApi } from '@/lib/api'
-import type { Book, BookFilters } from '@/types'
+import { Book, BookFilters } from '@/types'
 
 export default function BooksPage() {
   const [filters, setFilters] = useState<BookFilters>({
@@ -15,10 +15,21 @@ export default function BooksPage() {
     sortDir: 'asc',
   })
   const [searchTerm, setSearchTerm] = useState('')
+  const queryClient = useQueryClient()
 
   const { data: booksData, isLoading, error } = useQuery({
     queryKey: ['books', filters],
     queryFn: () => booksApi.getAll(filters),
+    retry: 1,
+    staleTime: 30000, // 30 seconds
+  })
+
+  const deleteBookMutation = useMutation({
+    mutationFn: (id: number) => booksApi.delete(id),
+    onSuccess: () => {
+      // Invalidate and refetch books list
+      queryClient.invalidateQueries({ queryKey: ['books'] })
+    },
   })
 
   const handleSearch = (e: React.FormEvent) => {
@@ -28,6 +39,17 @@ export default function BooksPage() {
 
   const handlePageChange = (newPage: number) => {
     setFilters({ ...filters, page: newPage })
+  }
+
+  const handleDeleteBook = async (id: number, title: string) => {
+    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+      try {
+        await deleteBookMutation.mutateAsync(id)
+      } catch (error) {
+        console.error('Error deleting book:', error)
+        alert('Failed to delete book. Please try again.')
+      }
+    }
   }
 
   const getStatusBadge = (book: Book) => {
@@ -45,6 +67,15 @@ export default function BooksPage() {
       <div className="text-center py-12">
         <div className="text-red-600">
           Error loading books. Please try again later.
+          <p className="mt-2 text-sm">
+            {error instanceof Error ? error.message : 'Unknown error occurred'}
+          </p>
+          <button 
+            className="btn-primary mt-4"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['books'] })}
+          >
+            Retry
+          </button>
         </div>
       </div>
     )
@@ -199,10 +230,8 @@ export default function BooksPage() {
                     <button
                       className="p-2 text-gray-400 hover:text-red-600"
                       title="Delete Book"
-                      onClick={() => {
-                        // TODO: Implement delete functionality
-                        alert('Delete functionality will be implemented')
-                      }}
+                      onClick={() => handleDeleteBook(book.id, book.title)}
+                      disabled={deleteBookMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -217,7 +246,7 @@ export default function BooksPage() {
                 <button
                   className="btn-outline"
                   disabled={booksData.data.first}
-                  onClick={() => handlePageChange(filters.page! - 1)}
+                  onClick={() => handlePageChange((filters.page || 0) - 1)}
                 >
                   Previous
                 </button>
@@ -229,7 +258,7 @@ export default function BooksPage() {
                 <button
                   className="btn-outline"
                   disabled={booksData.data.last}
-                  onClick={() => handlePageChange(filters.page! + 1)}
+                  onClick={() => handlePageChange((filters.page || 0) + 1)}
                 >
                   Next
                 </button>

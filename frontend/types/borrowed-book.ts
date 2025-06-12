@@ -6,9 +6,9 @@ export interface BorrowedBook {
   book: Book;
   member: Member;
   borrowDate: string;
-  dueDate: string;
-  returnDate: string | null;
-  status: 'BORROWED' | 'RETURNED' | 'OVERDUE';
+  dueDate?: string;
+  returnDate?: string | null;
+  status: 'BORROWED' | 'RETURNED' | 'OVERDUE' | 'LOST';
   notes?: string;
   createdAt: string;
   updatedAt: string;

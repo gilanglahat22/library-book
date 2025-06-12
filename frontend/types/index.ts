@@ -1,51 +1,16 @@
-export interface Author {
-  id: number;
-  name: string;
-  biography?: string;
-  nationality?: string;
-  birthYear?: number;
-  createdAt: string;
-  updatedAt: string;
-}
+// Import types from individual files
+import { Author } from './author';
+import { Book } from './book';
+import { Member } from './member';
+import { BorrowedBook } from './borrowed-book';
 
-export interface Book {
-  id: number;
-  title: string;
-  isbn?: string;
-  category: string;
-  publishingYear: number;
-  description?: string;
-  totalCopies: number;
-  availableCopies: number;
-  author: Author;
-  createdAt: string;
-  updatedAt: string;
-}
+// Re-export types
+export type { Author } from './author';
+export type { Book } from './book';
+export type { Member } from './member';
+export type { BorrowedBook } from './borrowed-book';
 
-export interface Member {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  membershipDate: string;
-  status: 'ACTIVE' | 'SUSPENDED' | 'EXPIRED';
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface BorrowedBook {
-  id: number;
-  member: Member;
-  book: Book;
-  borrowDate: string;
-  dueDate?: string;
-  returnDate?: string;
-  status: 'BORROWED' | 'RETURNED' | 'OVERDUE' | 'LOST';
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// Define additional types used across the application
 
 export interface PageResponse<T> {
   content: T[];
