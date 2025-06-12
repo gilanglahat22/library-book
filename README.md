@@ -1,15 +1,15 @@
 # Library Management System
 
-Sistem manajemen perpustakaan dengan arsitektur microservices.
+A microservices-based library management system.
 
-## Arsitektur Sistem
+## System Architecture
 
-Sistem ini terdiri dari beberapa komponen:
+The system consists of several components:
 
-1. **Database PostgreSQL**: Penyimpanan data untuk aplikasi
-2. **API Integrator**: Layanan Java Spring Boot yang menangani akses langsung ke database
-3. **Main API**: Layanan Java Spring Boot yang bertindak sebagai API Gateway dengan keamanan IP statis
-4. **Frontend**: Aplikasi Next.js untuk antarmuka pengguna
+1. **PostgreSQL Database**: Data storage for the application
+2. **API Integrator**: Java Spring Boot service that handles direct database access
+3. **Main API**: Java Spring Boot service that acts as an API Gateway with static IP security
+4. **Frontend**: Next.js application for the user interface
 
 ### System Design & Architecture
 
@@ -53,21 +53,21 @@ flowchart LR
     class E data
 ```
 
-#### Alur Data & Komunikasi
+#### Data Flow & Communication
 
-1. **Client** mengakses aplikasi melalui browser
-2. **Frontend (Next.js)** menyajikan UI dan mengirim request ke Main API
-3. **Main API** melakukan:
-   - Validasi IP (hanya menerima request dari IP yang diizinkan)
-   - Meneruskan request ke API Integrator dengan API key yang sesuai
-   - Menangani circuit breaking dan retry jika API Integrator tidak tersedia
-4. **API Integrator** melakukan:
-   - Validasi API key
-   - Operasi CRUD pada database
-   - Mengembalikan respons ke Main API
-5. **PostgreSQL Database** menyimpan semua data aplikasi
+1. **Client** accesses the application through a browser
+2. **Frontend (Next.js)** presents the UI and sends requests to the Main API
+3. **Main API** performs:
+   - IP validation (only accepting requests from allowed IPs)
+   - Forwarding requests to the API Integrator with the appropriate API key
+   - Handling circuit breaking and retry if the API Integrator is unavailable
+4. **API Integrator** performs:
+   - API key validation
+   - CRUD operations on the database
+   - Returning responses to the Main API
+5. **PostgreSQL Database** stores all application data
 
-#### Arsitektur Keamanan
+#### Security Architecture
 
 ```mermaid
 flowchart TD
@@ -94,106 +94,106 @@ flowchart TD
     class ipwhite,apikeys security
 ```
 
-#### Komponen Detail
+#### Component Details
 
 1. **Frontend (Next.js)**
-   - Aplikasi Single Page Application berbasis React
-   - Tailwind CSS untuk styling
-   - Pages untuk navigasi antar halaman
-   - Components untuk UI yang reusable
-   - API client untuk komunikasi dengan Main API
+   - React-based Single Page Application
+   - Tailwind CSS for styling
+   - Pages for navigation between screens
+   - Reusable UI components
+   - API client for communication with the Main API
 
 2. **Main API (Java Spring Boot)**
-   - API Gateway yang meneruskan request ke API Integrator
-   - Security dengan IP Whitelist
-   - Circuit Breaker dengan Resilience4j
-   - Controllers untuk setiap domain (Books, Authors, Borrowed Books)
-   - Swagger UI untuk dokumentasi API
+   - API Gateway that forwards requests to the API Integrator
+   - Security with IP Whitelist
+   - Circuit Breaker with Resilience4j
+   - Controllers for each domain (Books, Authors, Borrowed Books)
+   - Swagger UI for API documentation
 
 3. **API Integrator (Java Spring Boot)**
-   - Layanan backend yang melakukan akses database
-   - Security dengan API Key
-   - Controllers, Services, dan Repositories
-   - Model/Entity untuk representasi data
-   - Swagger UI untuk dokumentasi API
+   - Backend service that performs database access
+   - Security with API Key
+   - Controllers, Services, and Repositories
+   - Model/Entity for data representation
+   - Swagger UI for API documentation
 
 4. **Database PostgreSQL**
-   - Tabel untuk Books, Authors, Members, dan Borrowed Books
-   - Relasi antar entitas
-   - Indeks untuk performa query
+   - Tables for Books, Authors, Members, and Borrowed Books
+   - Relationships between entities
+   - Indexes for query performance
 
-## Struktur Proyek
+## Project Structure
 
 ```
 library-book/
-├── api_integrator/   # Integrator API dengan Java Spring Boot
-├── main_api/         # Main API dengan Java Spring Boot dan IP security
-├── frontend/         # Frontend dengan Next.js
-├── docker-compose.yml # Konfigurasi Docker Compose
+├── api_integrator/   # Integrator API with Java Spring Boot
+├── main_api/         # Main API with Java Spring Boot and IP security
+├── frontend/         # Frontend with Next.js
+├── docker-compose.yml # Docker Compose configuration
 ```
 
-## Prasyarat
+## Prerequisites
 
-- Docker dan Docker Compose
-- JDK 17 (untuk pengembangan lokal)
-- Node.js 18+ (untuk pengembangan frontend lokal)
+- Docker and Docker Compose
+- JDK 17 (for local development)
+- Node.js 18+ (for local frontend development)
 
-## Cara Menjalankan
+## How to Run
 
-### Menggunakan Docker Compose
+### Using Docker Compose
 
-1. Pastikan Docker dan Docker Compose terinstal
-2. Sesuaikan nilai di file `.env` jika diperlukan
-3. Jalankan semua layanan:
+1. Make sure Docker and Docker Compose are installed
+2. Adjust values in the `.env` file if needed
+3. Run all services:
 
    ```bash
    docker-compose up -d
    ```
 
-4. Untuk menghentikan semua layanan:
+4. To stop all services:
 
    ```bash
    docker-compose down
    ```
 
-### Akses Layanan
+### Service Access
 
 - Frontend: http://localhost:3000
 - Main API: http://localhost:8090/api
-- API Integrator: http://localhost:8080 (tidak diakses langsung oleh klien)
-- Swagger UI untuk Main API: http://localhost:8090/api/swagger-ui.html
-- Swagger UI untuk API Integrator: http://localhost:8080/swagger-ui.html
+- API Integrator: http://localhost:8080 (not directly accessed by clients)
+- Swagger UI for Main API: http://localhost:8090/api/swagger-ui.html
+- Swagger UI for API Integrator: http://localhost:8080/swagger-ui.html
 
-## Pengembangan Manual Tanpa Docker
+## Manual Development Without Docker
 
 ### API Integrator
 
-   ```bash
+```bash
 cd api_integrator
 mvn spring-boot:run
 ```
 
 ### Main API
 
-   ```bash
+```bash
 cd main_api
-   mvn spring-boot:run
-   ```
+mvn spring-boot:run
+```
 
 ### Frontend
 
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Keamanan
+## Security
 
-- Main API menggunakan keamanan berbasis IP (whitelist) untuk membatasi akses hanya dari frontend
-- API Integrator menggunakan API keys untuk otentikasi yang berbeda untuk setiap endpoint
-- Main API bertindak sebagai proxy yang menggunakan API keys yang sesuai saat mengakses API Integrator
+- Main API uses IP-based security (whitelist) to limit access only from the frontend
+- API Integrator uses API keys for authentication with different keys for each endpoint
+- Main API acts as a proxy that uses the appropriate API keys when accessing the API Integrator
 
 ## Environment Variables
 
-Semua konfigurasi dapat disesuaikan melalui file `.env` pada masing-masing folder proyek.
+All configurations can be customized through the `.env` file in each project folder.
