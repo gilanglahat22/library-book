@@ -35,7 +35,11 @@ public class StrictApiKeyFilter extends OncePerRequestFilter {
         "/api-docs/**", 
         "/v3/api-docs/**", 
         "/swagger-ui.html", 
-        "/csrf"
+        "/webjars/**",
+        "/swagger-resources/**",
+        "/configuration/**",
+        "/csrf",
+        "/error"
     };
     
     public StrictApiKeyFilter(String headerName, Map<String, String> apiKeys) {
@@ -83,7 +87,10 @@ public class StrictApiKeyFilter extends OncePerRequestFilter {
         // Set up authentication
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 apiKey, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+        
+        // Important: Set the authentication in the SecurityContextHolder
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        logger.debug("STRICT FILTER: Authentication set with role: ROLE_{}", role);
         
         // Continue with authenticated request
         filterChain.doFilter(request, response);

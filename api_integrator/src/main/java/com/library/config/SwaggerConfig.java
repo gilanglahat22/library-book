@@ -23,6 +23,15 @@ public class SwaggerConfig {
     
     @Value("${api.key.admin:admin-api-key-123}")
     private String adminApiKey;
+    
+    @Value("${api.key.books:books-api-key-456}")
+    private String booksApiKey;
+    
+    @Value("${api.key.authors:authors-api-key-789}")
+    private String authorsApiKey;
+    
+    @Value("${api.key.borrowed-books:borrowed-books-api-key-101}")
+    private String borrowedBooksApiKey;
 
     @Bean
     public OpenAPI openAPI() {
@@ -41,8 +50,9 @@ public class SwaggerConfig {
                         .description("API key authentication. Add your API key with the header: " + apiKeyHeaderName +
                                     "\n\nExample API keys:\n" +
                                     "- Admin (all access): " + adminApiKey + "\n" +
-                                    "- Books API: books-api-key-456\n" +
-                                    "- Authors API: authors-api-key-789")
+                                    "- Books API: " + booksApiKey + "\n" +
+                                    "- Authors API: " + authorsApiKey + "\n" +
+                                    "- Borrowed Books API: " + borrowedBooksApiKey)
                 )
             )
             .info(new Info()

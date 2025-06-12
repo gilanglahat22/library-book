@@ -99,6 +99,11 @@ springdoc:
     tryItOutEnabled: true
     filter: true
     persistAuthorization: true
+    disable-swagger-default-url: true
+    csrf:
+      enabled: false
+    oauth:
+      enabled: false
   show-actuator: false
   packages-to-scan: com.library.controller
   paths-to-match: /books/**, /authors/**, /borrowed-books/**

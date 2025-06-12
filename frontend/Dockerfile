@@ -13,11 +13,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Set environment variables
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-# Expose port
+# Environment variables will be supplied from docker-compose.yml
 EXPOSE 3000
 
 # Start the development server

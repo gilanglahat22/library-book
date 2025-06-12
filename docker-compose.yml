@@ -6,9 +6,9 @@ services:
     image: postgres:15-alpine
     container_name: library-postgres
     environment:
-      POSTGRES_DB: ${DB_NAME:-librarydb}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -28,25 +28,25 @@ services:
       dockerfile: Dockerfile
     container_name: library-api-integrator
     ports:
-      - "${API_INTEGRATOR_PORT:-8080}:8080"
+      - "${API_INTEGRATOR_PORT}:8080"
     environment:
       # Database Configuration
-      DB_URL: jdbc:postgresql://postgres:5432/librarydb
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       
       # API Key Configuration - using dot notation to match Spring property naming
-      api.key.header.name: X-API-KEY
-      api.key.admin: admin-api-key-123
-      api.key.books: books-api-key-456
-      api.key.authors: authors-api-key-789
-      api.key.borrowed-books: borrowed-books-api-key-101
+      api.key.header.name: ${API_KEY_HEADER_NAME}
+      api.key.admin: ${API_KEY_ADMIN}
+      api.key.books: ${API_KEY_BOOKS}
+      api.key.authors: ${API_KEY_AUTHORS}
+      api.key.borrowed-books: ${API_KEY_BORROWED_BOOKS}
       
       # JPA Configuration
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: true
-      SPRING_JPA_FORMAT_SQL: true
-      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL}
+      SPRING_JPA_FORMAT_SQL: ${SPRING_JPA_FORMAT_SQL}
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT}
     volumes:
       - ./api_integrator/logs:/app/logs
     depends_on:
@@ -63,26 +63,26 @@ services:
       dockerfile: Dockerfile
     container_name: library-main-api
     ports:
-      - "${MAIN_API_PORT:-8090}:8090"
+      - "${MAIN_API_PORT}:${SERVER_PORT}"
     environment:
       # Server Configuration
-      SERVER_PORT: ${MAIN_API_PORT:-8090}
-      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: ${SERVER_PORT}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       
       # API Integrator Configuration
-      API_INTEGRATOR_BASE_URL: http://api_integrator:8080
-      API_INTEGRATOR_TIMEOUT: 5000
+      API_INTEGRATOR_BASE_URL: ${API_INTEGRATOR_BASE_URL}
+      API_INTEGRATOR_TIMEOUT: ${API_INTEGRATOR_TIMEOUT}
       
       # API Key Configuration
-      API_KEY_HEADER_NAME: X-API-KEY
-      API_KEY_ADMIN: admin-api-key-123
-      API_KEY_BOOKS: books-api-key-456
-      API_KEY_AUTHORS: authors-api-key-789
-      API_KEY_BORROWED_BOOKS: borrowed-books-api-key-101
+      API_KEY_HEADER_NAME: ${API_KEY_HEADER_NAME}
+      API_KEY_ADMIN: ${API_KEY_ADMIN}
+      API_KEY_BOOKS: ${API_KEY_BOOKS}
+      API_KEY_AUTHORS: ${API_KEY_AUTHORS}
+      API_KEY_BORROWED_BOOKS: ${API_KEY_BORROWED_BOOKS}
       
       # Security Configuration - Allow frontend container and localhost
-      ALLOWED_IPS: 127.0.0.1,::1,frontend,172.17.0.1
-      FRONTEND_IP: frontend
+      ALLOWED_IPS: ${ALLOWED_IPS}
+      FRONTEND_IP: ${FRONTEND_IP}
     volumes:
       - ./main_api/logs:/app/logs
     depends_on:
@@ -100,8 +100,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:8090/api
+      - NODE_ENV=${NODE_ENV}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     volumes:
       - ./frontend:/app
       - /app/node_modules

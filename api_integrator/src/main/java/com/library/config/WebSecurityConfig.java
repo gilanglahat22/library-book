@@ -53,12 +53,15 @@ public class WebSecurityConfig {
         // Create a very strict API key filter that will be applied first
         StrictApiKeyFilter apiKeyFilter = new StrictApiKeyFilter(apiKeyHeaderName, apiKeys);
         
-        http.securityMatcher("/**") // Apply to all requests
-            .csrf().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .authorizeHttpRequests()
-                .requestMatchers("/", "/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+        // Create a Swagger UI authorization filter
+        SwaggerAuthorizationFilter swaggerAuthFilter = new SwaggerAuthorizationFilter();
+        
+        http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/", "/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**", "/swagger-ui.html", 
+                        "/webjars/**", "/swagger-resources/**", "/configuration/**", "/error").permitAll()
                 .requestMatchers("/books/**").hasAnyRole("ADMIN", "BOOKS")
                 .requestMatchers("/authors/**").hasAnyRole("ADMIN", "AUTHORS") 
                 .requestMatchers("/borrowed-books/**").hasAnyRole("ADMIN", "BORROWED_BOOKS")
@@ -66,10 +69,13 @@ public class WebSecurityConfig {
                 .requestMatchers("/security-test/authors-role").hasAnyRole("ADMIN", "AUTHORS")
                 .requestMatchers("/security-test/admin-role").hasRole("ADMIN")
                 .requestMatchers("/api-auth-test").authenticated()
+                .requestMatchers("/swagger-test").permitAll()
                 .anyRequest().authenticated()
-            .and()
-            // Add our strict filter first in the chain
-            .addFilterBefore(apiKeyFilter, WebAsyncManagerIntegrationFilter.class);
+            )
+            // Add our swagger filter before the strict filter
+            .addFilterBefore(swaggerAuthFilter, WebAsyncManagerIntegrationFilter.class)
+            // Add our strict filter before the authentication filter
+            .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class);
         
         logger.info("STRICT SECURITY CONFIGURATION COMPLETE");
         return http.build();

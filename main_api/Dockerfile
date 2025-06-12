@@ -13,12 +13,7 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
-# ENV SERVER_PORT=8090
-# ENV SPRING_PROFILES_ACTIVE=prod
-# ENV API_INTEGRATOR_BASE_URL=http://api_integrator:8080
-# ENV API_INTEGRATOR_TIMEOUT=5000
-# ENV ALLOWED_IPS=127.0.0.1,::1
-
+# Environment variables will be supplied from docker-compose.yml
 EXPOSE 8090
 
 ENTRYPOINT ["java", "-jar", "app.jar"] 
