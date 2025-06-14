@@ -59,7 +59,7 @@ docker build -t library-main-api .
 docker run -p 8090:8090 \
   -e SERVER_PORT=8090 \
   -e API_INTEGRATOR_BASE_URL=http://api_integrator:8080 \
-  -e ALLOWED_IPS=127.0.0.1,::1,192.168.1.1 \
+  -e ALLOWED_IPS=172.18.0.1 \
   -e FRONTEND_IP=127.0.0.1 \
   -e API_KEY_ADMIN=admin-api-key-123 \
   -e API_KEY_BOOKS=books-api-key-456 \
@@ -76,7 +76,7 @@ docker run -p 8090:8090 \
 Untuk membatasi akses API, konfigurasikan IP yang diizinkan di `.env` atau environment variables:
 
 ```
-ALLOWED_IPS=127.0.0.1,::1,192.168.1.1,10.0.0.1
+ALLOWED_IPS=172.18.0.1
 ```
 
 ### Frontend IP
