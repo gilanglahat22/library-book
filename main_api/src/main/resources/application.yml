@@ -10,61 +10,70 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
 # API Integrator Configuration
-api-integrator:
-  base-url: ${API_INTEGRATOR_BASE_URL:http://api_integrator:8080}
-  timeout: ${API_INTEGRATOR_TIMEOUT:5000}
-  
-  # API Key Configuration
-  api-keys:
+api:
+  integrator:
+    base:
+      url: ${API_INTEGRATOR_BASE_URL:http://localhost:8080}
+    timeout: ${API_INTEGRATOR_TIMEOUT:5000}
+  key:
+    header:
+      name: ${API_KEY_HEADER_NAME:X-API-KEY}
     admin: ${API_KEY_ADMIN:admin-api-key-123}
     books: ${API_KEY_BOOKS:books-api-key-456}
     authors: ${API_KEY_AUTHORS:authors-api-key-789}
     borrowed-books: ${API_KEY_BORROWED_BOOKS:borrowed-books-api-key-101}
-  
-  # API Key Header Name
-  api-key-header: ${API_KEY_HEADER_NAME:X-API-KEY}
-
-# Security Configuration
-security:
-  allowed-ips: ${ALLOWED_IPS:172.18.0.1}
-  # Frontend client IP address
-  frontend-ip: ${FRONTEND_IP:127.0.0.1}
 
 # Logging Configuration
 logging:
   level:
-    root: ${LOGGING_LEVEL_ROOT:INFO}
-    com.library.main_api: ${LOGGING_LEVEL_APP:DEBUG}
-    org.springframework.web: ${LOGGING_LEVEL_WEB:INFO}
-    org.springframework.security: ${LOGGING_LEVEL_SECURITY:INFO}
+    root: INFO
+    com.library: DEBUG
+    com.library.main_api.service: TRACE
+    org.springframework.web: INFO
+    org.springframework.web.client.RestTemplate: DEBUG
+  file:
+    name: logs/main-api.log
+    max-size: 10MB
+    max-history: 10
 
-# Circuit Breaker Configuration
-resilience4j:
-  circuitbreaker:
-    instances:
-      apiIntegrator:
-        slidingWindowSize: 10
-        permittedNumberOfCallsInHalfOpenState: 3
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10000
-  retry:
-    instances:
-      apiIntegrator:
-        maxAttempts: 3
-        waitDuration: 1000
-        retryExceptions:
-          - org.springframework.web.client.ResourceAccessException
-          - java.util.concurrent.TimeoutException
-
-# API Documentation
+# Swagger/OpenAPI Configuration
 springdoc:
   api-docs:
-    path: /docs
-    enabled: true
+    path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
-    enabled: true
     operationsSorter: method
     tagsSorter: alpha
-    docExpansion: none
-  show-actuator: true 
+    disable-swagger-default-url: true
+  show-actuator: true
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+logging:
+  level:
+    com.library: DEBUG
+    com.library.main_api.service: TRACE
+    org.springframework.web: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG
+
+---
+# Production Profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+logging:
+  level:
+    com.library: INFO
+    org.springframework.web: WARN 

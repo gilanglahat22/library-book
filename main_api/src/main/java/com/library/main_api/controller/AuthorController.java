@@ -1,111 +1,131 @@
 package com.library.main_api.controller;
 
 import com.library.main_api.service.ApiIntegratorService;
-import com.library.main_api.service.ApiIntegratorService.ApiType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/authors")
-@RequiredArgsConstructor
-@Slf4j
-@Tag(name = "Authors API", description = "API for managing authors")
+@CrossOrigin
+@Tag(name = "Authors", description = "Author management endpoints")
 public class AuthorController {
 
-    private final ApiIntegratorService apiIntegratorService;
+    private final ApiIntegratorService apiService;
+
+    @Autowired
+    public AuthorController(ApiIntegratorService apiService) {
+        this.apiService = apiService;
+    }
 
     @GetMapping
-    @Operation(summary = "Get all authors", description = "Retrieves a list of all authors")
-    public Mono<ResponseEntity<Map>> getAllAuthors(
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) String sort) {
+    @Operation(summary = "Get all authors with pagination and filtering")
+    public ResponseEntity<Object> getAllAuthors(
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "name") String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String sortDir,
+            @RequestParam(required = false) String search) {
         
-        StringBuilder path = new StringBuilder("/authors");
-        boolean hasQueryParams = false;
+        Map<String, Object> params = new HashMap<>();
+        params.put("page", page);
+        params.put("size", size);
+        params.put("sortBy", sortBy);
+        params.put("sortDir", sortDir);
         
-        if (page != null) {
-            path.append(hasQueryParams ? "&" : "?").append("page=").append(page);
-            hasQueryParams = true;
-        }
+        if (search != null) params.put("search", search);
         
-        if (size != null) {
-            path.append(hasQueryParams ? "&" : "?").append("size=").append(size);
-            hasQueryParams = true;
-        }
-        
-        if (sort != null) {
-            path.append(hasQueryParams ? "&" : "?").append("sort=").append(sort);
-        }
-        
-        return apiIntegratorService.makeGetRequest(path.toString(), ApiType.AUTHORS)
-                .map(ResponseEntity::ok);
+        return apiService.get("/authors", Object.class, params);
+    }
+
+    @GetMapping("/all")
+    @Operation(summary = "Get all authors without pagination")
+    public ResponseEntity<Object> getAllAuthorsWithoutPagination() {
+        return apiService.get("/authors/all", Object.class);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get author by ID", description = "Retrieves an author by their ID")
-    public Mono<ResponseEntity<Map>> getAuthorById(@PathVariable Long id) {
-        return apiIntegratorService.makeGetRequest("/authors/" + id, ApiType.AUTHORS)
-                .map(ResponseEntity::ok);
+    @Operation(summary = "Get author by ID")
+    public ResponseEntity<Object> getAuthorById(@PathVariable Long id) {
+        return apiService.get("/authors/" + id, Object.class);
+    }
+
+    @GetMapping("/{id}/with-books")
+    @Operation(summary = "Get author with their books")
+    public ResponseEntity<Object> getAuthorWithBooks(@PathVariable Long id) {
+        return apiService.get("/authors/" + id + "/with-books", Object.class);
+    }
+
+    @GetMapping("/by-name/{name}")
+    @Operation(summary = "Get author by name")
+    public ResponseEntity<Object> getAuthorByName(@PathVariable String name) {
+        return apiService.get("/authors/by-name/" + name, Object.class);
+    }
+
+    @GetMapping("/nationality/{nationality}")
+    @Operation(summary = "Get authors by nationality")
+    public ResponseEntity<Object> getAuthorsByNationality(@PathVariable String nationality) {
+        return apiService.get("/authors/nationality/" + nationality, Object.class);
+    }
+
+    @GetMapping("/birth-year")
+    @Operation(summary = "Get authors by birth year range")
+    public ResponseEntity<Object> getAuthorsByBirthYearRange(
+            @RequestParam Integer startYear,
+            @RequestParam Integer endYear) {
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("startYear", startYear);
+        params.put("endYear", endYear);
+        
+        return apiService.get("/authors/birth-year", Object.class, params);
     }
 
     @PostMapping
-    @Operation(summary = "Create a new author", description = "Creates a new author")
-    public Mono<ResponseEntity<Map>> createAuthor(@RequestBody Map<String, Object> author) {
-        return apiIntegratorService.makePostRequest("/authors", author, ApiType.AUTHORS)
-                .map(ResponseEntity::ok);
+    @Operation(summary = "Create a new author")
+    public ResponseEntity<Object> createAuthor(@RequestBody Object author) {
+        return apiService.post("/authors", author, Object.class);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update an author", description = "Updates an existing author")
-    public Mono<ResponseEntity<Map>> updateAuthor(
-            @PathVariable Long id, 
-            @RequestBody Map<String, Object> author) {
-        
-        return apiIntegratorService.makePutRequest("/authors/" + id, author, ApiType.AUTHORS)
-                .map(ResponseEntity::ok);
+    @Operation(summary = "Update an author")
+    public ResponseEntity<Object> updateAuthor(@PathVariable Long id, @RequestBody Object author) {
+        return apiService.put("/authors/" + id, author, Object.class);
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete an author", description = "Deletes an author by their ID")
-    public Mono<ResponseEntity<Map>> deleteAuthor(@PathVariable Long id) {
-        return apiIntegratorService.makeDeleteRequest("/authors/" + id, ApiType.AUTHORS)
-                .map(ResponseEntity::ok);
+    @Operation(summary = "Delete an author")
+    public ResponseEntity<Object> deleteAuthor(@PathVariable Long id) {
+        return apiService.delete("/authors/" + id, Object.class);
+    }
+
+    @GetMapping("/{id}/books-count")
+    @Operation(summary = "Get book count by author")
+    public ResponseEntity<Object> getBookCountByAuthor(@PathVariable Long id) {
+        return apiService.get("/authors/" + id + "/books-count", Object.class);
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search authors", description = "Search authors by name or nationality")
-    public Mono<ResponseEntity<Map>> searchAuthors(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String nationality) {
+    @Operation(summary = "Search authors")
+    public ResponseEntity<Object> searchAuthors(
+            @RequestParam String query,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "name") String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String sortDir) {
         
-        StringBuilder path = new StringBuilder("/authors/search?");
-        boolean hasQueryParams = false;
+        Map<String, Object> params = new HashMap<>();
+        params.put("query", query);
+        params.put("page", page);
+        params.put("size", size);
+        params.put("sortBy", sortBy);
+        params.put("sortDir", sortDir);
         
-        if (name != null) {
-            path.append("name=").append(name);
-            hasQueryParams = true;
-        }
-        
-        if (nationality != null) {
-            path.append(hasQueryParams ? "&" : "").append("nationality=").append(nationality);
-        }
-        
-        return apiIntegratorService.makeGetRequest(path.toString(), ApiType.AUTHORS)
-                .map(ResponseEntity::ok);
-    }
-
-    @GetMapping("/{id}/books")
-    @Operation(summary = "Get books by author", description = "Retrieves all books by a specific author")
-    public Mono<ResponseEntity<Map>> getBooksByAuthor(@PathVariable Long id) {
-        return apiIntegratorService.makeGetRequest("/authors/" + id + "/books", ApiType.AUTHORS)
-                .map(ResponseEntity::ok);
+        return apiService.get("/authors/search", Object.class, params);
     }
 } 
