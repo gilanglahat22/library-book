@@ -1,110 +1,156 @@
 package com.library.main_api.controller;
 
 import com.library.main_api.service.ApiIntegratorService;
-import com.library.main_api.service.ApiIntegratorService.ApiType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/borrowed-books")
-@RequiredArgsConstructor
-@Slf4j
-@Tag(name = "Borrowed Books API", description = "API for managing borrowed books")
+@CrossOrigin
+@Tag(name = "Borrowed Books", description = "Borrowed books management endpoints")
 public class BorrowedBookController {
 
-    private final ApiIntegratorService apiIntegratorService;
+    private final ApiIntegratorService apiService;
+
+    @Autowired
+    public BorrowedBookController(ApiIntegratorService apiService) {
+        this.apiService = apiService;
+    }
 
     @GetMapping
-    @Operation(summary = "Get all borrowed books", description = "Retrieves a list of all borrowed books")
-    public Mono<ResponseEntity<Map>> getAllBorrowedBooks(
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) String sort) {
+    @Operation(summary = "Get all borrowed books with pagination")
+    public ResponseEntity<Object> getAllBorrowedBooks(
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
         
-        StringBuilder path = new StringBuilder("/borrowed-books");
-        boolean hasQueryParams = false;
+        Map<String, Object> params = new HashMap<>();
+        params.put("page", page);
+        params.put("size", size);
         
-        if (page != null) {
-            path.append(hasQueryParams ? "&" : "?").append("page=").append(page);
-            hasQueryParams = true;
-        }
-        
-        if (size != null) {
-            path.append(hasQueryParams ? "&" : "?").append("size=").append(size);
-            hasQueryParams = true;
-        }
-        
-        if (sort != null) {
-            path.append(hasQueryParams ? "&" : "?").append("sort=").append(sort);
-        }
-        
-        return apiIntegratorService.makeGetRequest(path.toString(), ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
+        return apiService.get("/borrowed-books", Object.class, params);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get borrowed book by ID", description = "Retrieves a borrowed book by its ID")
-    public Mono<ResponseEntity<Map>> getBorrowedBookById(@PathVariable Long id) {
-        return apiIntegratorService.makeGetRequest("/borrowed-books/" + id, ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
+    @Operation(summary = "Get a borrowed book by ID")
+    public ResponseEntity<Object> getBorrowedBookById(@PathVariable Long id) {
+        return apiService.get("/borrowed-books/" + id, Object.class);
     }
 
-    @PostMapping
-    @Operation(summary = "Borrow a book", description = "Records a book being borrowed")
-    public Mono<ResponseEntity<Map>> borrowBook(@RequestBody Map<String, Object> borrowedBook) {
-        return apiIntegratorService.makePostRequest("/borrowed-books", borrowedBook, ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
-    }
-
-    @PutMapping("/{id}")
-    @Operation(summary = "Update borrowed book record", description = "Updates an existing borrowed book record")
-    public Mono<ResponseEntity<Map>> updateBorrowedBook(
-            @PathVariable Long id, 
-            @RequestBody Map<String, Object> borrowedBook) {
+    @GetMapping("/status/{status}")
+    @Operation(summary = "Get borrowed books by status")
+    public ResponseEntity<Object> getByStatus(
+            @PathVariable String status,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
         
-        return apiIntegratorService.makePutRequest("/borrowed-books/" + id, borrowedBook, ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
+        Map<String, Object> params = new HashMap<>();
+        params.put("page", page);
+        params.put("size", size);
+        
+        return apiService.get("/borrowed-books/status/" + status, Object.class, params);
     }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete borrowed book record", description = "Deletes a borrowed book record by its ID")
-    public Mono<ResponseEntity<Map>> deleteBorrowedBook(@PathVariable Long id) {
-        return apiIntegratorService.makeDeleteRequest("/borrowed-books/" + id, ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
-    }
-
-    @PostMapping("/{id}/return")
-    @Operation(summary = "Return a book", description = "Records a book being returned")
-    public Mono<ResponseEntity<Map>> returnBook(@PathVariable Long id) {
-        return apiIntegratorService.makePostRequest("/borrowed-books/" + id + "/return", Map.of(), ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
-    }
-
-    @GetMapping("/overdue")
-    @Operation(summary = "Get overdue books", description = "Gets a list of books that are overdue")
-    public Mono<ResponseEntity<Map>> getOverdueBooks() {
-        return apiIntegratorService.makeGetRequest("/borrowed-books/overdue", ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
-    }
-
-    @GetMapping("/user/{userId}")
-    @Operation(summary = "Get books borrowed by user", description = "Gets a list of books borrowed by a specific user")
-    public Mono<ResponseEntity<Map>> getBooksBorrowedByUser(@PathVariable Long userId) {
-        return apiIntegratorService.makeGetRequest("/borrowed-books/user/" + userId, ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
+    @GetMapping("/member/{memberId}")
+    @Operation(summary = "Get borrowed books by member ID")
+    public ResponseEntity<Object> getByMemberId(
+            @PathVariable Long memberId,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("page", page);
+        params.put("size", size);
+        
+        return apiService.get("/borrowed-books/member/" + memberId, Object.class, params);
     }
 
     @GetMapping("/book/{bookId}")
-    @Operation(summary = "Get borrow history for book", description = "Gets the borrow history for a specific book")
-    public Mono<ResponseEntity<Map>> getBorrowHistoryForBook(@PathVariable Long bookId) {
-        return apiIntegratorService.makeGetRequest("/borrowed-books/book/" + bookId, ApiType.BORROWED_BOOKS)
-                .map(ResponseEntity::ok);
+    @Operation(summary = "Get borrowed books by book ID")
+    public ResponseEntity<Object> getByBookId(
+            @PathVariable Long bookId,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("page", page);
+        params.put("size", size);
+        
+        return apiService.get("/borrowed-books/book/" + bookId, Object.class, params);
+    }
+
+    @GetMapping("/date-range")
+    @Operation(summary = "Get borrowed books by date range")
+    public ResponseEntity<Object> getByDateRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("startDate", startDate.toString());
+        params.put("endDate", endDate.toString());
+        params.put("page", page);
+        params.put("size", size);
+        
+        return apiService.get("/borrowed-books/date-range", Object.class, params);
+    }
+
+    @GetMapping("/overdue")
+    @Operation(summary = "Get overdue books")
+    public ResponseEntity<Object> getOverdueBooks(
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("page", page);
+        params.put("size", size);
+        
+        return apiService.get("/borrowed-books/overdue", Object.class, params);
+    }
+
+    @PostMapping
+    @Operation(summary = "Borrow a book")
+    public ResponseEntity<Object> borrowBook(@RequestBody Object borrowedBook) {
+        return apiService.post("/borrowed-books", borrowedBook, Object.class);
+    }
+
+    @PutMapping("/{id}/return")
+    @Operation(summary = "Return a borrowed book")
+    public ResponseEntity<Object> returnBook(
+            @PathVariable Long id,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate returnDate) {
+        
+        Map<String, Object> params = new HashMap<>();
+        if (returnDate != null) {
+            params.put("returnDate", returnDate.toString());
+        }
+        
+        return apiService.put("/borrowed-books/" + id + "/return", null, Object.class);
+    }
+
+    @PutMapping("/{id}/status")
+    @Operation(summary = "Update borrowed book status")
+    public ResponseEntity<Object> updateStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("status", status);
+        
+        return apiService.put("/borrowed-books/" + id + "/status", null, Object.class);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a borrowed book record")
+    public ResponseEntity<Object> deleteBorrowedBook(@PathVariable Long id) {
+        return apiService.delete("/borrowed-books/" + id, Object.class);
     }
 } 

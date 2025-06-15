@@ -1,123 +1,64 @@
-# Library Management System - Main API
+# Main API Gateway
 
-Main API Gateway untuk Library Management System yang menggunakan API Integrator.
+This is the main API gateway for the Library Management System. It serves as a distributor between the API Integrator and the frontend client.
 
-## Fitur
+## Features
 
-- Keamanan berbasis IP Statis (IP Whitelist)
-- Pengelolaan API Key untuk akses ke API Integrator
-- Circuit Breaker & Retry untuk meningkatkan resiliensi
-- Swagger UI untuk dokumentasi API
-- Penggunaan API Key yang berbeda untuk setiap endpoint API Integrator
+- Acts as a gateway between the frontend and the API Integrator
+- Handles API key authentication with the API Integrator
+- Provides a unified API for the frontend
+- Includes Swagger UI documentation
 
-## Struktur Proyek
+## API Endpoints
 
-```
-main_api/
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/
-│   │   │       └── library/
-│   │   │           └── main_api/
-│   │   │               ├── config/         # Konfigurasi aplikasi
-│   │   │               ├── controller/     # Controller API 
-│   │   │               ├── exception/      # Exception handler
-│   │   │               ├── service/        # Service
-│   │   │               └── MainApiApplication.java
-│   │   └── resources/
-│   │       └── application.yml             # Konfigurasi aplikasi
-│   └── test/                               # Unit test
-├── Dockerfile                              # Konfigurasi Docker
-├── pom.xml                                 # Dependency Maven
-└── env.example                             # Contoh variabel lingkungan
-```
+The Main API provides the following endpoints:
 
-## Cara Menjalankan
+- `/books/**` - Book management endpoints
+- `/authors/**` - Author management endpoints
+- `/borrowed-books/**` - Borrowed books management endpoints
+- `/members/**` - Member management endpoints
+- `/health` - Health check endpoint
+- `/swagger-ui.html` - Swagger UI documentation
 
-### Melalui Maven
+## Configuration
 
-1. Clone repositori
-2. Salin `env.example` ke `.env` dan sesuaikan nilai-nilainya
-3. Jalankan perintah:
+The Main API can be configured using environment variables:
+
+| Variable | Description | Default Value |
+|----------|-------------|---------------|
+| `SERVER_PORT` | Port for the server to listen on | `8090` |
+| `SPRING_PROFILES_ACTIVE` | Active Spring profile | `dev` |
+| `API_INTEGRATOR_BASE_URL` | Base URL for the API Integrator | `http://localhost:8080` |
+| `API_INTEGRATOR_TIMEOUT` | Timeout for API Integrator requests (ms) | `5000` |
+| `API_KEY_HEADER_NAME` | HTTP header name for API key | `X-API-KEY` |
+| `API_KEY_ADMIN` | API key for admin access | `admin-api-key-123` |
+| `API_KEY_BOOKS` | API key for books endpoints | `books-api-key-456` |
+| `API_KEY_AUTHORS` | API key for authors endpoints | `authors-api-key-789` |
+| `API_KEY_BORROWED_BOOKS` | API key for borrowed books endpoints | `borrowed-books-api-key-101` |
+
+## Running the Application
+
+### Using Maven
 
 ```bash
 mvn spring-boot:run
 ```
 
-### Melalui Docker
-
-1. Build image:
+### Using Docker
 
 ```bash
 docker build -t library-main-api .
+docker run -p 8090:8090 library-main-api
 ```
 
-2. Jalankan container:
+### Using Docker Compose
 
 ```bash
-docker run -p 8090:8090 \
-  -e SERVER_PORT=8090 \
-  -e API_INTEGRATOR_BASE_URL=http://api_integrator:8080 \
-  -e ALLOWED_IPS=127.0.0.1,::1,192.168.1.1 \
-  -e FRONTEND_IP=127.0.0.1 \
-  -e API_KEY_ADMIN=admin-api-key-123 \
-  -e API_KEY_BOOKS=books-api-key-456 \
-  -e API_KEY_AUTHORS=authors-api-key-789 \
-  -e API_KEY_BORROWED_BOOKS=borrowed-books-api-key-101 \
-  --name library-main-api \
-  library-main-api
+docker-compose up -d
 ```
 
-## Konfigurasi Keamanan
+## API Documentation
 
-### IP Statis
-
-Untuk membatasi akses API, konfigurasikan IP yang diizinkan di `.env` atau environment variables:
-
-```
-ALLOWED_IPS=127.0.0.1,::1,192.168.1.1,10.0.0.1
-```
-
-### Frontend IP
-
-Untuk CORS, tentukan IP frontend:
-
-```
-FRONTEND_IP=127.0.0.1
-```
-
-### API Key
-
-Untuk akses ke API Integrator, konfigurasikan API key:
-
-```
-API_KEY_ADMIN=admin-api-key-123
-API_KEY_BOOKS=books-api-key-456
-API_KEY_AUTHORS=authors-api-key-789
-API_KEY_BORROWED_BOOKS=borrowed-books-api-key-101
-```
-
-## Dokumentasi API
-
-Swagger UI tersedia di:
-
-```
-http://localhost:8090/api/swagger-ui.html
-```
-
-API Docs tersedia di:
-
-```
-http://localhost:8090/api/docs
-```
-
-## Integrasi dengan Frontend
-
-Frontend dapat mengakses API melalui:
-
-```
-http://localhost:8090/api/{endpoint}
-```
-
-Pastikan IP address frontend terdaftar di konfigurasi `ALLOWED_IPS` dan `FRONTEND_IP`. 
+The API documentation is available at:
+- Swagger UI: http://localhost:8090/swagger-ui.html
+- OpenAPI JSON: http://localhost:8090/api-docs 
